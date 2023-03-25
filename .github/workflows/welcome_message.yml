@@ -1,0 +1,32 @@
+name: Check for new users
+
+on:
+  pull_request:
+    types: [ opened, reopened ]
+
+jobs:
+  Welcome:
+    name: Welcome
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Fetch PR information
+        run: |
+          git fetch
+          git checkout ${{ github.event.pull_request.head.ref }}
+      - name: Get message for new user
+        run:
+          echo "WELCOME_FILE=./ci_tools/bot_messages/welcome_newcomer.txt" >> $GITHUB_ENV
+        shell: bash
+        if: ${{ github.event.pull_request.author_association == FIRST_TIMER || github.event.pull_request.author_association == FIRST_TIME_CONTRIBUTOR }}
+      - name: Get message for recognised user
+        run:
+          echo "WELCOME_FILE=./ci_tools/bot_messages/welcome_friend.txt" >> $GITHUB_ENV
+        shell: bash
+        if: ${{ github.event.pull_request.author_association != FIRST_TIMER && github.event.pull_request.author_association != FIRST_TIME_CONTRIBUTOR }}
+      - name: Print comment
+        run: |
+          WELCOME=$(cat ${WELCOME_FILE})
+          CHECKLIST=$(cat ./ci_tools/bot_messages/checklist.txt)
+          gh pr comment ${{github.event.pull_request.number}} -b "${WELCOME}\n${CHECKLIST}"
