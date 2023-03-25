@@ -11,10 +11,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Fetch PR information
-        run: |
-          git fetch
-          git checkout ${{ github.event.pull_request.head.ref }}
       - name: Get message for new user
         run:
           echo "WELCOME_FILE=./ci_tools/bot_messages/welcome_newcomer.txt" >> $GITHUB_ENV
