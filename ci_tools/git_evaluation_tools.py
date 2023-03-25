@@ -18,6 +18,7 @@ __all__ = ('github_cli',
            'leave_comment',
            'remove_labels',
            'set_draft',
+           'trigger_test'
            )
 
 github_cli = shutil.which('gh')
@@ -300,8 +301,28 @@ def check_passing():
     return passing
 
 
+def leave_comment(number, comment):
+    """
+    Leave a comment on the PR.
 
-def leave_comment(number, comment, allow_duplicate):
+    Use GitHub's command-line interface to leave a comment
+    on the request PR related to this branch.
+
+    Parameters
+    ----------
+    number : int
+        The number of the PR.
+
+    comment : str
+        The comment which should be left on the PR.
+    """
+    cmds = [github_cli, 'pr', 'comment', str(number), '-b', comment]
+
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        p.communicate()
+
+
+def leave_non_repeat_comment(number, comment, allow_duplicate):
     """
     Leave a comment on the PR.
 
@@ -374,3 +395,23 @@ def set_draft(number):
 
     with subprocess.Popen(cmds) as p:
         p.communicate()
+
+def trigger_test(number, workflow_name):
+    """
+    Trigger the requested workflow.
+
+    Use GitHub's command-line interface to trigger the named
+    workflow via the workflow_dispatch trigger.
+
+    Parameters
+    ----------
+    number : int
+        The number of the PR.
+
+    workflow_name : str
+        The name of the workflow to be triggered.
+    """
+    cmds = [github_cli, 'workflow', 'run', workflow_name, 'comments', '--ref', f'pull/{number}/merge']
+
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        result, _ = p.communicate()
