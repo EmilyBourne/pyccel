@@ -18,6 +18,8 @@ jobs:
           python-version: 3.9
       - name: Call bot
         run: |
+          git branch
+          gh pr status --json headRefName,number
           NEWCOMER=${{ github.event.pull_request.author_association == 'FIRST_TIMER' || github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' }}
           python ci_tools/bot_interaction.py ${{ github.event.issue.number }} "${{ github.event.comment.body }}" ${NEWCOMER}
         shell: bash
