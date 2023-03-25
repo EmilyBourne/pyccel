@@ -25,7 +25,7 @@ jobs:
         run: |
           WELCOME=$(cat ${WELCOME_FILE})
           CHECKLIST=$(cat ./ci_tools/bot_messages/checklist.txt)
-          MESSAGE=$(printf "${WELCOME}\n${CHECK}")
+          MESSAGE=$(printf "${WELCOME}\n${CHECKLIST}")
           echo "${MESSAGE}"
           gh pr comment ${{github.event.pull_request.number}} -b "${MESSAGE}"
         env:
