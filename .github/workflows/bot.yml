@@ -17,8 +17,7 @@ jobs:
         with:
           python-version: 3.9
       - name: Call bot
-        run: |
-          git branch
+        run:
           python ci_tools/bot_interaction.py ${{ github.event.issue.number }} "${{ github.event.comment.body }}"
         shell: bash
 
