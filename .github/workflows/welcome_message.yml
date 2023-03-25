@@ -11,6 +11,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Set to draft
+        run:
+          gh pr ready ${{ github.event.pull_request.number }} --undo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        if: ${{ ! github.event.pull_request.draft }}
       - name: Get message for new user
         run:
           echo "WELCOME_FILE=./ci_tools/bot_messages/welcome_newcomer.txt" >> $GITHUB_ENV
