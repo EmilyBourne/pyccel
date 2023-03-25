@@ -43,7 +43,7 @@ def get_status_json(pr_id, tags):
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
         p.communicate()
 
-    data = json.loads(result)['createdBy']
+    data = json.loads(result)['currentBranch']
     if isinstance(data, list):
         relevant_data = [d for d in data if d['number'] == pr_id][0]
     else:
