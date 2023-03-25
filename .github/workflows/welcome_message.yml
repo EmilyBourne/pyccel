@@ -1,0 +1,38 @@
+name: Check for new users
+
+on:
+  pull_request:
+    types: [ opened ]
+
+jobs:
+  Welcome:
+    name: Welcome
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set to draft
+        run:
+          gh pr ready ${{ github.event.pull_request.number }} --undo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        if: ${{ ! github.event.pull_request.draft }}
+      - name: Get message for new user
+        run:
+          echo "WELCOME_FILE=./ci_tools/bot_messages/welcome_newcomer.txt" >> $GITHUB_ENV
+        shell: bash
+        if: ${{ github.event.pull_request.author_association == 'FIRST_TIMER' || github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' }}
+      - name: Get message for recognised user
+        run:
+          echo "WELCOME_FILE=./ci_tools/bot_messages/welcome_friend.txt" >> $GITHUB_ENV
+        shell: bash
+        if: ${{ github.event.pull_request.author_association != 'FIRST_TIMER' && github.event.pull_request.author_association != 'FIRST_TIME_CONTRIBUTOR' }}
+      - name: Print comment
+        run: |
+          WELCOME=$(cat ${WELCOME_FILE})
+          CHECKLIST=$(cat ./ci_tools/bot_messages/checklist.txt)
+          MESSAGE=$(printf "${WELCOME}\n${CHECKLIST}")
+          echo "${MESSAGE}"
+          gh pr comment ${{github.event.pull_request.number}} -b "${MESSAGE}"
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -1,0 +1,23 @@
+name: Pyccel Bot
+
+on:
+  issue_comment:
+    types: [ created ]
+
+jobs:
+  Bot:
+    name: Pyccel Bot
+    runs-on: ubuntu-latest
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, "@bot") }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - name: Call bot
+        run:
+          python ci_tools/bot_interaction.py ${{ github.event.issue.number }} "${{ github.event.comment.body }}"
+        shell: bash
+
