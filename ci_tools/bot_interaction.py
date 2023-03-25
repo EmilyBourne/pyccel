@@ -1,5 +1,5 @@
 import argparse
-from git_evaluation_tools import trigger_test, leave_comment
+from git_evaluation_tools import trigger_test, leave_comment, get_previous_pr_comments
 
 #senior_reviewer = ['yguclu', 'ebourne']
 senior_reviewer = ['ebourne']

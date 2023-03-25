@@ -9,6 +9,7 @@ import subprocess
 __all__ = ('github_cli',
            'ReviewComment',
            'get_diff_as_json',
+           'get_previous_pr_comments',
            'check_previous_comments',
            'get_pr_number',
            'get_labels',
@@ -160,7 +161,7 @@ def check_previous_comments(pr_id):
 
     datetime : The last time the bot commented.
     """
-    comments = get_previous_comments(pr_id)
+    comments = get_previous_pr_comments(pr_id)
     my_comments = [c for c in comments if c.author == 'github-actions']
 
     if len(my_comments) == 0:
