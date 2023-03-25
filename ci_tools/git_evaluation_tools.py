@@ -414,4 +414,4 @@ def trigger_test(number, workflow_name):
     cmds = [github_cli, 'workflow', 'run', workflow_name, 'comments', '--ref', f'pull/{number}/merge']
 
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
+        p.communicate()
