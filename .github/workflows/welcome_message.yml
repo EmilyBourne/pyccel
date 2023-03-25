@@ -19,12 +19,12 @@ jobs:
         run:
           echo "WELCOME_FILE=./ci_tools/bot_messages/welcome_newcomer.txt" >> $GITHUB_ENV
         shell: bash
-        if: ${{ github.event.pull_request.author_association == FIRST_TIMER || github.event.pull_request.author_association == FIRST_TIME_CONTRIBUTOR }}
+        if: ${{ github.event.pull_request.author_association == 'FIRST_TIMER' || github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' }}
       - name: Get message for recognised user
         run:
           echo "WELCOME_FILE=./ci_tools/bot_messages/welcome_friend.txt" >> $GITHUB_ENV
         shell: bash
-        if: ${{ github.event.pull_request.author_association != FIRST_TIMER && github.event.pull_request.author_association != FIRST_TIME_CONTRIBUTOR }}
+        if: ${{ github.event.pull_request.author_association != 'FIRST_TIMER' && github.event.pull_request.author_association != 'FIRST_TIME_CONTRIBUTOR' }}
       - name: Print comment
         run: |
           WELCOME=$(cat ${WELCOME_FILE})
