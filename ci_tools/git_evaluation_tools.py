@@ -418,8 +418,12 @@ def trigger_test(number, workflow_name):
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
         result, _ = p.communicate()
 
-    number_ref = json.loads(result)['createdBy']
-    head_ref = [r['headRefName'] for r in number_ref if r['number'] == number][0]
+    number_ref = json.loads(result)['currentBranch']
+    if isinstance(number_ref, list):
+        head_ref = [r['headRefName'] for r in number_ref if r['number'] == number][0]
+    else:
+        assert number_ref['number'] == number
+        head_ref = number_ref['headRefName']
 
     cmds = [github_cli, 'workflow', 'run', workflow_name, 'comments', '--ref', head_ref]
 
