@@ -78,7 +78,7 @@ def print_commands(pr_id, new_user):
 
 bot_triggers = {'run tests' : run_tests,
                 'mark as ready': mark_as_ready,
-                'trust user': lambda pr_id, new_user: pass,
+                'trust user': lambda pr_id, new_user: None,
                 'commands' : print_commands}
 
 
