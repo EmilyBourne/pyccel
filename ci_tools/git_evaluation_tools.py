@@ -128,15 +128,17 @@ def get_previous_pr_comments(pr_id):
     -------
     list : A list of all the messages left on the PR.
     """
-    cmds = [github_cli, 'pr', 'status', '--json', 'comments']
+    cmds = [github_cli, 'pr', 'status', '--json', 'comments,number']
 
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
         result, _ = p.communicate()
 
-    previous_comments = json.loads(result)['createdBy']['comments']
+    all_comments = json.loads(result)['createdBy']
+
+    relevant_comments = [c['comments'] for c in all_comments if c['number'] == pr_id]
 
     my_comments = [Comment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')), c['author']['login'])
-                        for c in previous_comments if f"/pull/{pr_id}#" in c['url']]
+                        for c in relevant_comments]
 
 def check_previous_comments(pr_id):
     """
@@ -405,7 +407,15 @@ def trigger_test(number, workflow_name):
     workflow_name : str
         The name of the workflow to be triggered.
     """
-    cmds = [github_cli, 'workflow', 'run', workflow_name, 'comments', '--ref', f'pull/{number}/merge']
+    cmds = [github_cli, 'pr', 'status', '--json', 'headRefName,number']
+
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        result, _ = p.communicate()
+
+    number_ref = json.loads(result)['createdBy']
+    head_ref = [r['headRefName'] for r in number_ref if r['number'] == number][0]
+
+    cmds = [github_cli, 'workflow', 'run', workflow_name, 'comments', '--ref', head_ref]
 
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
         p.communicate()
