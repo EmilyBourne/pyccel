@@ -1,5 +1,5 @@
 import argparse
-from git_evaluation_tools import trigger_test, leave_comment, get_previous_pr_comments
+from git_evaluation_tools import trigger_test, leave_comment, get_previous_pr_comments, get_head_ref
 
 #senior_reviewer = ['yguclu', 'ebourne']
 senior_reviewer = ['ebourne']
@@ -33,8 +33,9 @@ def run_tests(pr_id, new_user):
              'Python Linting',
              'Pyccel Linting',
              'Spellcheck Action']
+    head_ref = get_head_ref(pr_id)
     for t in tests:
-        trigger_test(pr_id, t)
+        trigger_test(pr_id, t, head_ref)
 
 def mark_as_ready(pr_id, new_user):
     """
