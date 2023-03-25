@@ -18,6 +18,7 @@ jobs:
           python-version: 3.9
       - name: Call bot
         run: |
+          git fetch
           git branch
           gh pr status --json headRefName,number
           NEWCOMER=${{ github.event.pull_request.author_association == 'FIRST_TIMER' || github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' }}
