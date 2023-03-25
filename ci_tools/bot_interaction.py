@@ -18,13 +18,13 @@ def run_tests(pr_id, new_user):
     """
     if new_user:
         comments = get_previous_pr_comments(pr_id)
-        validated = any(c.body == '@bot trust user' and c.author in senior_reviewer)
+        validated = any(c.body == '/bot trust user' and c.author in senior_reviewer)
         if not validated:
             tags = ", ".join(f"@{r}" for r in senior_reviewer)
             message = (tags+
                        ", a new user wants to run tests."
                        "Please could you take a quick look and make sure I'm not going to run anything malicious."
-                       "If all's ok then let me now with `@bot trust user`. Thanks")
+                       "If all's ok then let me now with `/bot trust user`. Thanks")
             leave_comment(pr_id, message)
             return
 
@@ -68,7 +68,7 @@ def print_commands(pr_id, new_user):
         The number of the PR.
     """
 
-    bot_commands = ("This bot reacts to all comments which begin with `@bot`. This phrase can be followed by any of these commands:\n"
+    bot_commands = ("This bot reacts to all comments which begin with `/bot`. This phrase can be followed by any of these commands:\n"
             "- `run tests` : Triggers the tests for a draft pull request\n"
             "- `mark as ready` : Adds the appropriate review flag and requests reviews. This command should be used when the PR is first ready for review, or when a review has been answered.\n"
             "- `trust user` : When written by a senior developer this allows the bot to run tests for a new contributor\n"
@@ -93,6 +93,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    command = args.command.split('@bot')[1].strip()
+    command = args.command.split('/bot')[1].strip()
 
     bot_triggers.get(command, print_commands)(args.pr_number, args.new_user)
