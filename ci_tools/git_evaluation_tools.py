@@ -9,6 +9,7 @@ import subprocess
 __all__ = ('github_cli',
            'ReviewComment',
            'get_diff_as_json',
+           'get_previous_pr_comments',
            'check_previous_comments',
            'get_pr_number',
            'get_labels',
@@ -135,10 +136,11 @@ def get_previous_pr_comments(pr_id):
 
     all_comments = json.loads(result)['createdBy']
 
-    relevant_comments = [c['comments'] for c in all_comments if c['number'] == pr_id]
+    relevant_comments = [c['comments'] for c in all_comments if c['number'] == pr_id][0]
 
-    my_comments = [Comment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')), c['author']['login'])
+    comments = [Comment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')), c['author']['login'])
                         for c in relevant_comments]
+    return comments
 
 def check_previous_comments(pr_id):
     """
@@ -160,7 +162,7 @@ def check_previous_comments(pr_id):
 
     datetime : The last time the bot commented.
     """
-    comments = get_previous_comments(pr_id)
+    comments = get_previous_pr_comments(pr_id)
     my_comments = [c for c in comments if c.author == 'github-actions']
 
     if len(my_comments) == 0:
@@ -407,8 +409,12 @@ def trigger_test(number, workflow_name):
     workflow_name : str
         The name of the workflow to be triggered.
     """
+    # Change to PR to have access to relevant status
+    cmds = [github_cli, 'pr', 'checkout', str(number)]
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        result, _ = p.communicate()
+    # Check status of PR
     cmds = [github_cli, 'pr', 'status', '--json', 'headRefName,number']
-
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
         result, _ = p.communicate()
 

@@ -2,10 +2,12 @@ name: Python Linting
 on:
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   Linter:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
 
     steps:
       - uses: actions/checkout@v3
