@@ -409,8 +409,12 @@ def trigger_test(number, workflow_name):
     workflow_name : str
         The name of the workflow to be triggered.
     """
+    # Change to PR to have access to relevant status
+    cmds = [github_cli, 'pr', 'checkout', str(number)]
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        result, _ = p.communicate()
+    # Check status of PR
     cmds = [github_cli, 'pr', 'status', '--json', 'headRefName,number']
-
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
         result, _ = p.communicate()
 

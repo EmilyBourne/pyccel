@@ -20,6 +20,7 @@ jobs:
         run: |
           gh pr checkout ${{ github.event.issue.number }}
           gh pr status --json headRefName,number
+          gh pr checkout master
           NEWCOMER=${{ github.event.pull_request.author_association == 'FIRST_TIMER' || github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' }}
           python ci_tools/bot_interaction.py ${{ github.event.issue.number }} "${{ github.event.comment.body }}" ${NEWCOMER}
         shell: bash
