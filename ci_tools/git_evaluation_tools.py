@@ -390,7 +390,7 @@ def set_draft(number):
         p.communicate()
 
 def get_head_ref(number):
-    return [r['headRefName'] for r in get_status_json(number, 'headRefName')]
+    return get_status_json(number, 'headRefName')
 
 def trigger_test(number, workflow_name, head_ref):
     """
