@@ -38,6 +38,7 @@ def mark_as_ready(pr_id):
     pr_id : int
         The number of the PR.
     """
+    pass
 
 def print_commands(pr_id):
     """
