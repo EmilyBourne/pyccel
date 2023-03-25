@@ -19,6 +19,7 @@ __all__ = ('github_cli',
            'leave_comment',
            'remove_labels',
            'set_draft',
+           'get_head_ref',
            'trigger_test'
            )
 
@@ -26,6 +27,30 @@ github_cli = shutil.which('gh')
 
 ReviewComment = namedtuple('ReviewComment', ['state', 'date', 'author'])
 Comment = namedtuple('Comment', ['body', 'date', 'author'])
+
+def get_status_json(pr_id, tags):
+    # Change to PR to have access to relevant status
+    cmds = [github_cli, 'pr', 'checkout', str(pr_id)]
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        result, _ = p.communicate()
+    # Check status of PR
+    cmds = [github_cli, 'pr', 'status', '--json', f'{tags},number']
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        result, _ = p.communicate()
+    # Return to master branch
+    cmds = ['git', 'checkout', 'master']
+
+    data = json.loads(result)['createdBy']
+    if isinstance(data, list):
+        relevant_data = [d for d in data if d['number'] == pr_id][0]
+    else:
+        assert data['number'] == pr_id
+        relevant_data = data
+
+    if ',' in tags:
+        return relevant_data
+    else:
+        return relevant_data[tags]
 
 def get_diff_as_json(filename):
     """
@@ -129,14 +154,7 @@ def get_previous_pr_comments(pr_id):
     -------
     list : A list of all the messages left on the PR.
     """
-    cmds = [github_cli, 'pr', 'status', '--json', 'comments,number']
-
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    all_comments = json.loads(result)['createdBy']
-
-    relevant_comments = [c['comments'] for c in all_comments if c['number'] == pr_id][0]
+    relevant_comments = get_status_json('comments')
 
     comments = [Comment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')), c['author']['login'])
                         for c in relevant_comments]
@@ -196,12 +214,7 @@ def get_labels():
     -------
     list : A list of the names of all the labels.
     """
-    cmds = [github_cli, 'pr', 'status', '--json', 'labels']
-
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    label_json = json.loads(result)['currentBranch']['labels']
+    label_json = get_status_json('labels')
     current_labels = [l['name'] for l in label_json]
     return current_labels
 
@@ -218,12 +231,7 @@ def is_draft():
     -------
     bool : The draft status of the PR.
     """
-    cmds = [github_cli, 'pr', 'status', '--json', 'isDraft']
-
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    return json.loads(result)['currentBranch']['isDraft']
+    return get_status_json('isDraft')
 
 
 
@@ -238,19 +246,9 @@ def get_review_status():
     -------
     dict : Keys are authors of reviews, values are the state of their review.
     """
-    cmds = [github_cli, 'pr', 'status', '--json', 'reviews']
+    reviews = get_status_json('reviews')
+    requests = get_status_json('reviewRequests')
 
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    reviews = json.loads(result)['currentBranch']['reviews']
-
-    cmds = [github_cli, 'pr', 'status', '--json', 'reviewRequests']
-
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    requests = json.loads(result)['currentBranch']['reviewRequests']
     requested_authors = [r["login"] for r in requests]
 
     review_status = {}
@@ -288,12 +286,7 @@ def check_passing():
 
 
     # Collect results
-    cmds = [github_cli, 'pr', 'status', '--json', 'statusCheckRollup']
-
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    checks = json.loads(result)['currentBranch']['statusCheckRollup']
+    checks = get_status_json('statusCheckRollup')
     passing = all(c['conclusion'] == 'SUCCESS' for c in checks if c['name'] not in ('CoverageChecker', 'Check labels', 'Welcome'))
 
     return passing
@@ -394,7 +387,10 @@ def set_draft(number):
     with subprocess.Popen(cmds) as p:
         p.communicate()
 
-def trigger_test(number, workflow_name):
+def get_head_ref(number):
+    return [r['headRefName'] for r in get_status_json('headRefName')]
+
+def trigger_test(number, workflow_name, head_ref):
     """
     Trigger the requested workflow.
 
@@ -409,18 +405,7 @@ def trigger_test(number, workflow_name):
     workflow_name : str
         The name of the workflow to be triggered.
     """
-    # Change to PR to have access to relevant status
-    cmds = [github_cli, 'pr', 'checkout', str(number)]
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-    # Check status of PR
-    cmds = [github_cli, 'pr', 'status', '--json', 'headRefName,number']
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    number_ref = json.loads(result)['createdBy']
-    head_ref = [r['headRefName'] for r in number_ref if r['number'] == number][0]
-
+    print(workflow_name, head_ref)
     cmds = [github_cli, 'workflow', 'run', workflow_name, 'comments', '--ref', head_ref]
 
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
