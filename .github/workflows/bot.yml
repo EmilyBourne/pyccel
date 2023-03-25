@@ -8,9 +8,7 @@ jobs:
   Bot:
     name: Pyccel Bot
     runs-on: ubuntu-latest
-    #if: ${{ github.event.issue.pull_request}}
-    if: ${{ startsWith(github.event.comment.body, "@bot") }}
-    #if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, "@bot" }}
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, "@bot") }}
 
     steps:
       - uses: actions/checkout@v3
