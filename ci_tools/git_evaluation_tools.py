@@ -23,7 +23,8 @@ __all__ = ('github_cli',
 
 github_cli = shutil.which('gh')
 
-ReviewComment = namedtuple('ReviewComment', ['state', 'date'])
+ReviewComment = namedtuple('ReviewComment', ['state', 'date', 'author'])
+Comment = namedtuple('Comment', ['body', 'date', 'author'])
 
 def get_diff_as_json(filename):
     """
@@ -111,13 +112,45 @@ def get_diff_as_json(filename):
 
     return changes
 
+def get_previous_pr_comments(pr_id):
+    """
+    Get all previous comments left on the PR.
 
-def check_previous_comments():
+    Get a list of all comments left on the PR as reported by the GitHub
+    CLI.
+
+    Parameters
+    ----------
+    pr_id : int
+        The number of the PR.
+
+    Results
+    -------
+    list : A list of all the messages left on the PR.
+    """
+    cmds = [github_cli, 'pr', 'status', '--json', 'comments,number']
+
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        result, _ = p.communicate()
+
+    all_comments = json.loads(result)['createdBy']
+
+    relevant_comments = [c['comments'] for c in all_comments if c['number'] == pr_id]
+
+    my_comments = [Comment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')), c['author']['login'])
+                        for c in relevant_comments]
+
+def check_previous_comments(pr_id):
     """
     Get information about previous comments made by the bot.
 
     Get a list of all comments left by the bot as well as its most recent comment
     to avoid it repeating itself unnecessarily
+
+    Parameters
+    ----------
+    pr_id : int
+        The number of the PR.
 
     Results
     -------
@@ -127,15 +160,8 @@ def check_previous_comments():
 
     datetime : The last time the bot commented.
     """
-    cmds = [github_cli, 'pr', 'status', '--json', 'comments']
-
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    previous_comments = json.loads(result)['currentBranch']['comments']
-
-    my_comments = [ReviewComment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')))
-                        for c in previous_comments if c['author']['login'] == 'github-actions']
+    comments = get_previous_comments(pr_id)
+    my_comments = [c for c in comments if c.author == 'github-actions']
 
     if len(my_comments) == 0:
         return [], '', None
@@ -155,36 +181,6 @@ def check_previous_comments():
                 final_date = c.date
 
         return last_messages, final_message, final_date
-
-
-def get_pr_number():
-    """
-    Check if this branch has exactly 1 related PR.
-
-    Use GitHub's command-line tool to get the PR number for
-    all PRs related to this branch. Output a message to clarify
-    which PR is considered relevant.
-
-    Results
-    -------
-    bool : Indicates whether this branch has exactly 1 related PR.
-    """
-    cmds = [github_cli, 'pr', 'status', '--json', 'number']
-
-    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
-
-    output = json.loads(result)
-
-    if 'currentBranch' not in output:
-        return []
-    else:
-        PRs = output['currentBranch']['number']
-        if isinstance(PRs, list):
-            return PRs
-        else:
-            return PRs
-
 
 
 def get_labels():
@@ -261,15 +257,15 @@ def get_review_status():
         date = datetime.fromisoformat(r['submittedAt'].strip('Z'))
         state = r['state']
         if author not in review_status:
-            review_status[author] = ReviewComment(state, date)
+            review_status[author] = ReviewComment(state, date, author)
         elif state != 'COMMENTED' and review_status[author].date < date:
-            review_status[author] = ReviewComment(state, date)
+            review_status[author] = ReviewComment(state, date, author)
     for a in review_status:
         if a in requested_authors:
-            review_status[a] = ReviewComment('REVIEW_REQUESTED', review_status[a].date)
+            review_status[a] = ReviewComment('REVIEW_REQUESTED', review_status[a].date, a)
     for a in requests:
         if a not in review_status:
-            review_status[a] = ReviewComment('UNRESPONSIVE', None)
+            review_status[a] = ReviewComment('UNRESPONSIVE', None, a)
     return review_status, requested_authors
 
 
@@ -411,7 +407,15 @@ def trigger_test(number, workflow_name):
     workflow_name : str
         The name of the workflow to be triggered.
     """
-    cmds = [github_cli, 'workflow', 'run', workflow_name, 'comments', '--ref', f'pull/{number}/merge']
+    cmds = [github_cli, 'pr', 'status', '--json', 'headRefName,number']
+
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        result, _ = p.communicate()
+
+    number_ref = json.loads(result)['createdBy']
+    head_ref = [r['headRefName'] for r in number_ref if r['number'] == number][0]
+
+    cmds = [github_cli, 'workflow', 'run', workflow_name, 'comments', '--ref', head_ref]
 
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
         p.communicate()
