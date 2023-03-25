@@ -2,7 +2,7 @@ name: Check for new users
 
 on:
   pull_request:
-    types: [ opened, reopened ]
+    types: [ opened ]
 
 jobs:
   Welcome:
