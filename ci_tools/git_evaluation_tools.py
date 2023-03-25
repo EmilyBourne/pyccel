@@ -136,10 +136,11 @@ def get_previous_pr_comments(pr_id):
 
     all_comments = json.loads(result)['createdBy']
 
-    relevant_comments = [c['comments'] for c in all_comments if c['number'] == pr_id]
+    relevant_comments = [c['comments'] for c in all_comments if c['number'] == pr_id][0]
 
-    my_comments = [Comment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')), c['author']['login'])
+    comments = [Comment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')), c['author']['login'])
                         for c in relevant_comments]
+    return comments
 
 def check_previous_comments(pr_id):
     """

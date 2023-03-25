@@ -18,13 +18,13 @@ def run_tests(pr_id, new_user):
     """
     if new_user:
         comments = get_previous_pr_comments(pr_id)
-        validated = any(c.body == '/bot trust user' and c.author in senior_reviewer)
+        validated = any(c.body == '/bot trust user' and c.author in senior_reviewer for c in comments)
         if not validated:
             tags = ", ".join(f"@{r}" for r in senior_reviewer)
             message = (tags+
-                       ", a new user wants to run tests."
-                       "Please could you take a quick look and make sure I'm not going to run anything malicious."
-                       "If all's ok then let me now with `/bot trust user`. Thanks")
+                       ", a new user wants to run tests. "
+                       "Please could you take a quick look and make sure I'm not going to run anything malicious. "
+                       "If all's ok then let me know with `/bot trust user`. Thanks")
             leave_comment(pr_id, message)
             return
 
@@ -88,11 +88,13 @@ if __name__ == '__main__':
                             help='Number of the pull request')
     parser.add_argument('command', type=str,
                             help='The command left in the comment')
-    parser.add_argument('new_user', type=bool,
+    parser.add_argument('new_user', type=str,
                             help='Indicates whether the contributor is new or old and trusted')
 
     args = parser.parse_args()
 
     command = args.command.split('/bot')[1].strip()
 
-    bot_triggers.get(command, print_commands)(args.pr_number, args.new_user)
+    new_user = args.new_user == 'true'
+
+    bot_triggers.get(command, print_commands)(args.pr_number, new_user)
