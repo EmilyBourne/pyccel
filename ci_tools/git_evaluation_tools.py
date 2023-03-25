@@ -32,15 +32,18 @@ def get_status_json(pr_id, tags):
     # Change to PR to have access to relevant status
     cmds = [github_cli, 'pr', 'checkout', str(pr_id)]
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
-        result, _ = p.communicate()
+        p.communicate()
     # Check status of PR
     cmds = [github_cli, 'pr', 'status', '--json', f'{tags},number']
     with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
         result, _ = p.communicate()
+        print(result, pr_id)
     # Return to master branch
     cmds = ['git', 'checkout', 'master']
+    with subprocess.Popen(cmds, stdout=subprocess.PIPE) as p:
+        p.communicate()
 
-    data = json.loads(result)['createdBy']
+    data = json.loads(result)['currentBranch']
     if isinstance(data, list):
         relevant_data = [d for d in data if d['number'] == pr_id][0]
     else:
@@ -154,7 +157,7 @@ def get_previous_pr_comments(pr_id):
     -------
     list : A list of all the messages left on the PR.
     """
-    relevant_comments = get_status_json('comments')
+    relevant_comments = get_status_json(pr_id, 'comments')
 
     comments = [Comment(c["body"], datetime.fromisoformat(c['createdAt'].strip('Z')), c['author']['login'])
                         for c in relevant_comments]
@@ -203,7 +206,7 @@ def check_previous_comments(pr_id):
         return last_messages, final_message, final_date
 
 
-def get_labels():
+def get_labels(pr_id):
     """
     Get the labels associated with the PR.
 
@@ -214,7 +217,7 @@ def get_labels():
     -------
     list : A list of the names of all the labels.
     """
-    label_json = get_status_json('labels')
+    label_json = get_status_json(pr_id, 'labels')
     current_labels = [l['name'] for l in label_json]
     return current_labels
 
@@ -231,7 +234,7 @@ def is_draft():
     -------
     bool : The draft status of the PR.
     """
-    return get_status_json('isDraft')
+    return get_status_json(pr_id, 'isDraft')
 
 
 
@@ -246,8 +249,8 @@ def get_review_status():
     -------
     dict : Keys are authors of reviews, values are the state of their review.
     """
-    reviews = get_status_json('reviews')
-    requests = get_status_json('reviewRequests')
+    reviews = get_status_json(pr_id, 'reviews')
+    requests = get_status_json(pr_id, 'reviewRequests')
 
     requested_authors = [r["login"] for r in requests]
 
@@ -286,7 +289,7 @@ def check_passing():
 
 
     # Collect results
-    checks = get_status_json('statusCheckRollup')
+    checks = get_status_json(pr_id, 'statusCheckRollup')
     passing = all(c['conclusion'] == 'SUCCESS' for c in checks if c['name'] not in ('CoverageChecker', 'Check labels', 'Welcome'))
 
     return passing
@@ -388,7 +391,7 @@ def set_draft(number):
         p.communicate()
 
 def get_head_ref(number):
-    return [r['headRefName'] for r in get_status_json('headRefName')]
+    return get_status_json(number, 'headRefName')
 
 def trigger_test(number, workflow_name, head_ref):
     """
