@@ -44,6 +44,7 @@ with open(args.report, 'r', encoding='utf-8') as f:
         except ValueError:
             parsing_errors.append(line)
 
+print("Errors : ",errors, parsing_errors)
 fail = len(errors) > 0 or len(parsing_errors) > 0
 
 with open(args.summary, 'a', encoding='utf-8') as f:
