@@ -59,7 +59,7 @@ jobs:
           touch report.txt
           python ci_tools/list_docs_tovalidate.py pull_diff.txt objects.txt
           while read line; do    
-            python -m numpydoc --validate $line >> report.txt 2>&1
+            python -m numpydoc --validate $line >> report.txt 2>&1 || true
           done < objects.txt
           cat report.txt
           python ci_tools/process_results.py report.txt $GITHUB_STEP_SUMMARY
