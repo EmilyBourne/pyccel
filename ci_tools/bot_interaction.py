@@ -15,7 +15,7 @@ trusted_reviewers = ['yguclu', 'EmilyBourne', 'ratnania', 'saidctb', 'bauom']
 
 #pr_test_keys = ['linux', 'windows', 'macosx', 'coverage', 'docs', 'pylint',
 #                'lint', 'spelling']
-pr_test_keys = ['spelling']
+pr_test_keys = ['linux', 'coverage', 'spelling']
 
 review_labels = ('needs_initial_review', 'Ready_for_review', 'Ready_to_merge')
 
