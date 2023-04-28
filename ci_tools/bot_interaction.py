@@ -211,6 +211,9 @@ def mark_as_ready(pr_id, outputs):
     ----------
     pr_id : int
         The number of the PR.
+
+    outputs : dict
+        The dictionary containing the output of the bot.
     """
     running_job_data = get_status_json(pr_id, 'statusCheckRollup')
 
@@ -251,7 +254,7 @@ def mark_as_ready(pr_id, outputs):
 
         set_review_stage(pr_id)
 
-    return 'failure' if failures else 'success'
+    outputs['global_state'] = 'failure' if failures else 'success'
 
 def message_from_file(filename):
     """
@@ -274,7 +277,7 @@ def message_from_file(filename):
         comment = msg_file.read()
     return comment
 
-def update_test_information(pr_id, event):
+def update_test_information(pr_id, event, outputs):
     """
     Update the PR with the information about the tests.
 
@@ -290,6 +293,9 @@ def update_test_information(pr_id, event):
 
     event : dict
         The event payload of the GitHub workflow.
+
+    outputs : dict
+        The dictionary containing the output of the bot.
     """
     messages, last_message, _ = check_previous_comments(pr_id)
 
@@ -312,7 +318,7 @@ def update_test_information(pr_id, event):
 
     leave_comment(pr_id, comment, url in last_message)
 
-    return 'success' if passed else 'failure'
+    outputs['global_state'] = 'failure' if failures else 'success'
 
 def start_review_check(pr_id, event, outputs):
     """
@@ -453,10 +459,7 @@ if __name__ == '__main__':
         else:
             pr_id = event['issue']['number']
         update_test_information(pr_id, event)
-        result = mark_as_ready(pr_id, outputs)
-        with open(args.output, encoding="utf-8", mode='a') as out_file:
-            print(f"global_state={result}", file=out_file)
-        sys.exit()
+        mark_as_ready(pr_id, outputs)
 
     elif cleanup_trigger == 'update_test_information':
         # If reporting after run
@@ -464,10 +467,7 @@ if __name__ == '__main__':
         # Collect id from a comment event
         pr_id = event['issue']['number']
 
-        result = update_test_information(pr_id, event)
-        with open(args.output, encoding="utf-8", mode='a') as out_file:
-            print(f"global_state={result}", file=out_file)
-        sys.exit()
+        update_test_information(pr_id, event, outputs)
 
     elif 'comment' in event and 'pull_request' in event['issue'] and event['comment']['body'].startswith('/bot'):
         # If bot called explicitly (comment event)
