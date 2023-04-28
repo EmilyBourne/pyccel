@@ -458,7 +458,7 @@ if __name__ == '__main__':
             pr_id = event['number']
         else:
             pr_id = event['issue']['number']
-        update_test_information(pr_id, event)
+        update_test_information(pr_id, event, outputs)
         mark_as_ready(pr_id, outputs)
 
     elif cleanup_trigger == 'update_test_information':
