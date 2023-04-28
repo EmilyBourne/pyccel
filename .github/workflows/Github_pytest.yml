@@ -40,8 +40,6 @@ jobs:
       - id: run_bot
         run: |
           python ci_tools/bot_interaction.py $GITHUB_EVENT_PATH $GITHUB_OUTPUT ${{ github.run_id }}
-          echo '${{ toJson(github) }}'
-          echo "${{ github.repository }}"
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Post status
@@ -204,7 +202,7 @@ jobs:
           curl -L \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/${{ github.repository.full_name }}/commits/${{ needs.Bot.outputs.SHA }}/check-runs > check_run_info.json
+            https://api.github.com/repos/${{ github.repository }}/commits/${{ needs.Bot.outputs.SHA }}/check-runs > check_run_info.json
           cat check_run_info.json
         env:
           GH_TOKEN: ${{ github.token }}
@@ -233,5 +231,5 @@ jobs:
             -X PATCH \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/${{ github.repository.full_name }}/check-runs/${coverage_id} \
+            https://api.github.com/repos/${{ github.repository }}/check-runs/${coverage_id} \
             -d '{"conclusion":"success"}'
