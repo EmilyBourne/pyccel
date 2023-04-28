@@ -323,7 +323,7 @@ def update_test_information(pr_id, event, outputs):
 
     leave_comment(pr_id, comment, url in last_message)
 
-    outputs['global_state'] = 'failure' if failures else 'success'
+    outputs['global_state'] = 'success' if passed else 'failure'
 
 def start_review_check(pr_id, event, outputs):
     """
