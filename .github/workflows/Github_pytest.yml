@@ -193,8 +193,18 @@ jobs:
       - windows_anaconda
     if: ${{ always() && needs.Bot.outputs.cleanup_trigger != '' }}
     runs-on: ubuntu-latest
+    outputs:
+      coverage_id: ${{ steps.run_bot.outputs.coverage_id }}
     steps:
       - uses: actions/checkout@v3
+      - name: Get check run ids
+        run: |
+          curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository.full_name }}/commits/${{ needs.Bot.outputs.SHA }}/check-runs > check_run_info.json
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Set up Python ${{ inputs.python_version }}
         uses: actions/setup-python@v4
         with:
@@ -213,3 +223,12 @@ jobs:
             -f description="${{ github.event.comment.body }}" -f context="Tests on Draft"
         env:
           GH_TOKEN: ${{ github.token }}
+      - name:
+        if: ${{ steps.run_bot.outputs.coverage_id != '' }}
+        run: |
+          curl -L \
+            -X PATCH \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository.full_name }}/check-runs/${coverage_id} \
+            -d '{"conclusion":"success"}'

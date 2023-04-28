@@ -195,7 +195,7 @@ def set_review_stage(pr_id):
                 message = message_from_file('new_pr.txt').format(author=author)
                 leave_comment(pr_id, message)
 
-def mark_as_ready(pr_id):
+def mark_as_ready(pr_id, outputs):
     """
     Mark the pull request as ready for review.
 
@@ -224,8 +224,15 @@ def mark_as_ready(pr_id):
         failures.append('Codacy Static Code Analysis')
 
     ignore_coverage = accept_coverage_failure(pr_id)
-    coverage_failed = any('coverage' in f for f in failures) and not ignore_coverage
+    coverage_failed = any('coverage' in f for f in failures)
     others_failed = any('coverage' not in f for f in failures)
+
+    if coverage_failed and ignore_coverage:
+        with open('check_run_info.json', encoding="utf-8") as check_info:
+            check_info = json.load(event_file)['check_runs']
+        ids = [c['id'] for c in check_info if c["name"] == "coverage / Unit tests" and c["conclusion"] == 'failure']
+        outputs['coverage_id']=ids[0]
+        coverage_failed = False
 
     if coverage_failed and not others_failed:
         set_draft(pr_id)
@@ -446,7 +453,7 @@ if __name__ == '__main__':
         else:
             pr_id = event['issue']['number']
         update_test_information(pr_id, event)
-        result = mark_as_ready(pr_id)
+        result = mark_as_ready(pr_id, outputs)
         with open(args.output, encoding="utf-8", mode='a') as out_file:
             print(f"global_state={result}", file=out_file)
         sys.exit()

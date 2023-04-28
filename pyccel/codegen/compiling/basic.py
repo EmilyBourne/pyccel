@@ -92,6 +92,10 @@ class CompileObj:
             self.add_dependencies(*dependencies)
         self._has_target_file = has_target_file
 
+        a = False
+        if a:
+            b = 22
+
     def reset_folder(self, folder):
         """
         Change the folder in which the source file is saved (useful for stdlib)
