@@ -228,8 +228,8 @@ def mark_as_ready(pr_id, outputs):
     others_failed = any('coverage' not in f for f in failures)
 
     if coverage_failed and ignore_coverage:
-        with open('check_run_info.json', encoding="utf-8") as check_info:
-            check_info = json.load(event_file)['check_runs']
+        with open('check_run_info.json', encoding="utf-8") as check_info_file:
+            check_info = json.load(check_info_file)['check_runs']
         ids = [c['id'] for c in check_info if c["name"] == "coverage / Unit tests" and c["conclusion"] == 'failure']
         outputs['coverage_id']=ids[0]
         coverage_failed = False
