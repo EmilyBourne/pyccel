@@ -54,7 +54,7 @@ class Bot:
             self._base = None
         else:
             pr = self._GAI.get_pr_details(pr_id)
-            self._ref = pr["head"]["sha"]
+            self._ref = pr["merge_commit_sha"]
             self._base = pr["base"]["sha"]
 
     def show_tests(self):
@@ -68,7 +68,7 @@ class Bot:
 
     def run_tests(self, tests, python_version = None):
         if any(t not in default_python_versions for t in tests):
-            self._GAI.create_comment(self._pr_id, "There are unrecognised tests.\n"+message_from_file('bot_commands.txt'))
+            self._GAI.create_comment(self._pr_id, "There are unrecognised tests.\n"+message_from_file('show_tests.txt'))
         else:
             already_triggered = [c["name"] for c in self._GAI.get_check_runs(self._ref)['check_runs']]
             print(already_triggered)
