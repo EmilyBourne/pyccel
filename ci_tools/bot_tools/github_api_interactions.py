@@ -17,27 +17,44 @@ def get_authorization():
     # Create JWT
     reply = requests.post("https://api.github.com/app/installations/37820767/access_tokens", headers=headers)
 
-    return reply.json()["token"], reply.json()["expires_at"]
+    token = reply.json()["token"]
+    time  = reply.json()["expires_at"]
+
+    with open(os.environ["GITHUB_OUTPUT"], "r") as f:
+        output = f.read()
+
+    if "installation_token" in lines:
+        lines = output.split('\n')
+        print(lines)
+        output = '\n'.join(l for l in lines if "installation_token" not in l)
+
+    with open(os.environ["GITHUB_OUTPUT"], "w") as f:
+        f.write(output)
+        print(f"installation_token={token}", file=f)
+        print(f"installation_token_exp={token}", file=f)
+
+    return token, time
 
 class GitHubAPIInteractions:
     def __init__(self, repo):
         self._org, self._repo = repo.split('/')
-        self._install_token = os.environ["installation_token"]
-        self._install_token_exp = time.strptime(os.environ["installation_token_exp"], "%Y-%m-%dT%H:%M:%SZ")
+        if "installation_token" in os.environ:
+            self._install_token = os.environ["installation_token"]
+            self._install_token_exp = time.strptime(os.environ["installation_token_exp"], "%Y-%m-%dT%H:%M:%SZ")
+        else:
+            self._install_token, expiry = get_authorization()
+            self._install_token_exp = time.strptime(expiry, "%Y-%m-%dT%H:%M:%SZ")
 
     def _post_request(self, method, url, json=None):
         reply = requests.request(method, url, json=json, headers=self.get_headers())
         print("----------------------------------------")
         print(reply.text)
         print("----------------------------------------")
-        if method != "POST":
-            return reply.json()
-        else:
-            return reply
+        return reply
 
     def check_runs(self, commit):
         url = f"https://api.github.com/repos/{self._org}/{self._repo}/commits/{commit}/check-runs"
-        return self._post_request("GET", url)
+        return self._post_request("GET", url).json()
 
     def create_run(self, commit, name, workflow_url):
         url = f"https://api.github.com/repos/{self._org}/{self._repo}/check-runs"
@@ -47,21 +64,35 @@ class GitHubAPIInteractions:
                 "details_url": workflow_url}
         return self._post_request("POST", url, json)
 
+    def prepare_run(self, commit, name, workflow_url):
+        url = f"https://api.github.com/repos/{self._org}/{self._repo}/check-runs"
+        json = {"name": name,
+                "head_sha": commit,
+                "status": "queued"}
+        return self._post_request("POST", url, json)
+
+    def update_run(self, run_id, json):
+        url = f"https://api.github.com/repos/{self._org}/{self._repo}/check-runs/{run_id}"
+        return self._post_request("POST", url, json)
+
     def update_run(self, run_id, **kwargs):
+        # Check runs (https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28)
         url = f"https://api.github.com/repos/{self._org}/{self._repo}/check-runs/{run_id}"
         return self._post_request("POST", url, kwargs)
 
     def get_pr_details(self, pr_id):
         url = f"https://api.github.com/repos/{self._org}/{self._repo}/pulls/{pr_id}"
-        return self._post_request("GET", url)
+        return self._post_request("GET", url).json()
 
     def run_workflow(self, filename, inputs):
+        # Create a workflow dispatch event (https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28)
         url = f"https://api.github.com/repos/{self._org}/{self._repo}/actions/workflows/{filename}/dispatches"
         json = {"ref": "devel",
                 "inputs": inputs}
         return self._post_request("POST", url, json)
 
     def get_comments(self, pr_id):
+        # Inspect comments (https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28)
         url = f"https://api.github.com/repos/{self._org}/{self._repo}/issues/{pr_id}/comments"
         return self._post_request("GET", url)
 
@@ -86,6 +117,11 @@ class GitHubAPIInteractions:
     def get_check_runs(self, commit):
         url = f'https://api.github.com/repos/{self._org}/{self._repo}/commits/{commit}/check-runs'
         return self._post_request("GET", url)
+
+    def get_pr_events(self, pr_id):
+        url = f"https://api.github.com/repos/{self._org}/{self._repo}/issues/{pr_id}/events"
+        return self._post_request("GET", url)
+
 
     def get_headers(self):
         if self._install_token_exp < time.struct_time(time.gmtime()):

@@ -3,8 +3,8 @@ import json
 import os
 from bot_tools.bot_funcs import Bot
 
-pr_test_keys = ['linux', 'windows', 'macosx', 'coverage', 'docs', 'pylint',
-                'lint', 'spelling']
+pr_test_keys = ['linux', 'windows', 'macosx', 'coverage', 'doc_coverage', 'pylint',
+                'pyccel_lint', 'spelling']
 
 def get_unique_test_list(keys):
     tests = set(command_words[1:])
@@ -50,7 +50,7 @@ elif command_words[0] == 'try':
 
 elif command_words[:3] == ['mark', 'as', 'ready']:
     if bot.is_user_trusted(event['comment']['user']['login']):
-        bot.mark_as_ready()
+        bot.request_mark_as_ready()
         bot.run_tests(pr_test_keys)
     else:
         bot.warn_untrusted()
