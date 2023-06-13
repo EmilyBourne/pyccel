@@ -65,7 +65,7 @@ jobs:
           cd compare
           pip install .
           git fetch
-          git diff origin/${{ inputs.base }}..HEAD --no-indent-heuristic --unified=0 --output=pull_diff.txt --no-color &>/dev/null
+          git diff ${{ inputs.base }}..HEAD --no-indent-heuristic --unified=0 --output=pull_diff.txt --no-color
           touch objects.txt
           touch report.txt
           python ci_tools/list_docs_tovalidate.py pull_diff.txt objects.txt
@@ -79,7 +79,7 @@ jobs:
       - name: "Post completed"
         if: always()
         run:
-          python ci_tools/complete_check_run.py ${{ steps.doc_coverage.outcome }} ${{ steps.doc_format.outcome }}
+          python base/ci_tools/complete_check_run.py ${{ steps.doc_coverage.outcome }} ${{ steps.doc_format.outcome }}
         env:
           installation_token: ${{ steps.token.outputs.installation_token }}
           installation_token_exp: ${{ steps.token.outputs.installation_token_exp }}
