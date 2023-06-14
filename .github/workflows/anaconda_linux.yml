@@ -13,6 +13,12 @@ on:
         required: false
         type: string
 
+env:
+  COMMIT: ${{ inputs.ref || github.event.ref }}
+  PEM: ${{ secrets.BOT_PEM }}
+  GITHUB_RUN_ID: ${{ github.run_id }}
+  GITHUB_CHECK_RUN_ID: ${{ inputs.check_run_id }}
+
 jobs:
   Anaconda-Linux:
     runs-on: ubuntu-latest
@@ -21,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ inputs.ref || github.event.ref }}
+          ref: ${COMMIT}
       - name: Install dependencies
         uses: ./.github/actions/linux_install
       - uses: conda-incubator/setup-miniconda@v2
@@ -34,10 +40,6 @@ jobs:
         run: |
           pip install jwt requests
           python ci_tools/setup_check_run.py
-        env:
-          PEM: ${{ secrets.BOT_PEM }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_CHECK_RUN_ID: ${{ inputs.check_run_id }}
       - name: Install python dependencies
         uses: ./.github/actions/conda_installation
         with:
@@ -75,6 +77,3 @@ jobs:
         if: always()
         run:
           python ci_tools/complete_check_run.py ${{ steps.f_c_pytest.outcome }} ${{ steps.python_pytest.outcome }} ${{ steps.parallel.outcome }}
-        env:
-          installation_token: ${{ steps.token.outputs.installation_token }}
-          installation_token_exp: ${{ steps.token.outputs.installation_token_exp }}
