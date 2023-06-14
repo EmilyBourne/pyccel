@@ -1,6 +1,7 @@
 import json
 import os
 from bot_tools.bot_funcs import Bot
+from bot_tools.setup_values import get_pr_id
 
 bot = Bot(check_run_id = os.environ["GITHUB_CHECK_RUN_ID"], commit = os.environ["GITHUB_REF"])
 
@@ -13,13 +14,14 @@ if os.environ["GITHUB_CHECK_RUN_ID"]=="":
         event = json.load(event_file)
     workflow_file = event["workflow"]
     test_key = os.path.splitext(os.path.basename(workflow_file))[0]
-    run_id = bot.create_in_progress_check_run(test_key)
+    posted = bot.create_in_progress_check_run(test_key)
 else:
-    print(os.environ["GITHUB_CHECK_RUN_ID"])
-    bot.post_in_progress()
-    run_id = os.environ["GITHUB_CHECK_RUN_ID"]
+    posted = bot.post_in_progress()
+run_id = posted['id']
+pr_id = get_pr_id(posted['pull_requests'])
 
 print(f"check_run_id={run_id}", sep='')
 print(os.environ["GITHUB_ENV"])
 with open(os.environ["GITHUB_ENV"], "a") as f:
     print(f"check_run_id={run_id}", sep='', file=f)
+    print(f"PR_ID={pr_id}", sep='', file=f)

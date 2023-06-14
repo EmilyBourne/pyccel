@@ -68,9 +68,8 @@ class Bot:
     def __init__(self, pr_id = None, check_run_id = None, commit = None):
         self._repo = os.environ["GITHUB_REPOSITORY"]
         self._GAI = GitHubAPIInteractions()
-        if pr_id:
-            self._pr_id = pr_id
-            self._pr_details = self._GAI.get_pr_details(pr_id)
+        self._pr_id = pr_id or os.environ["PR_ID"]
+        self._pr_details = self._GAI.get_pr_details(pr_id)
         if commit:
             self._ref = commit
             self._base = None
@@ -87,7 +86,7 @@ class Bot:
         key = f"({test}, {pv})"
         name = f"{test_names[test]} {key}"
         posted = self._GAI.create_run(self._ref, name)
-        return posted["id"]
+        return posted
 
     def post_in_progress(self):
         inputs = {
@@ -95,7 +94,7 @@ class Bot:
                 "details_url": f"https://github.com/{self._repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
                 }
         print(inputs)
-        self._GAI.update_run(self._check_run_id, inputs)
+        return self._GAI.update_run(self._check_run_id, inputs).json()
 
     def post_completed(self, conclusion):
         if os.path.exists('test_json_result.json'):
