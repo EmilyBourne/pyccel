@@ -1,5 +1,4 @@
 name: Windows unit tests
-run-name: windows
 
 on:
   workflow_dispatch:
@@ -66,4 +65,3 @@ jobs:
         env:
           installation_token: ${{ steps.token.outputs.installation_token }}
           installation_token_exp: ${{ steps.token.outputs.installation_token_exp }}
-          check_run_id: ${{ inputs.check_run_id }}

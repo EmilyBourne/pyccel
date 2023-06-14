@@ -1,5 +1,4 @@
 name: Pyccel Linting
-run-name: pyccel_lint
 
 on:
   workflow_dispatch:
@@ -73,4 +72,3 @@ jobs:
         env:
           installation_token: ${{ steps.token.outputs.installation_token }}
           installation_token_exp: ${{ steps.token.outputs.installation_token_exp }}
-          check_run_id: ${{ inputs.check_run_id }}

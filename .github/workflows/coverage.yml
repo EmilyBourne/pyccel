@@ -1,5 +1,4 @@
 name: Unit test coverage
-run-name: coverage
 
 on:
   workflow_dispatch:
@@ -15,6 +14,9 @@ on:
         type: string
       check_run_id:
         required: false
+        type: string
+      artifact_urls:
+        required: true
         type: string
 
 jobs:
@@ -53,9 +55,18 @@ jobs:
           python -m pip install defusedxml
         shell: bash
       - name: Collect coverage information
-        uses: actions/download-artifact@v3
+        run: |
+          python ci_tools/fetch_artifacts.py ${{ inputs.artifact_urls }}
+          echo -e "[paths]\nsource =\n   $(pwd)/pyccel\n   */site-packages/pyccel\n[xml]\noutput = cobertura.xml" > .coveragerc
+          coverage combine
+          coverage xml
+        shell: bash
+      - name: Run codacy-coverage-reporter
+        uses: codacy/codacy-coverage-reporter-action@master
+        continue-on-error: True
         with:
-          name: coverage-artifact
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: cobertura.xml
       - name: Collect diff information
         run: |
           git fetch
@@ -73,4 +84,3 @@ jobs:
         env:
           installation_token: ${{ steps.token.outputs.installation_token }}
           installation_token_exp: ${{ steps.token.outputs.installation_token_exp }}
-          check_run_id: ${{ inputs.check_run_id }}

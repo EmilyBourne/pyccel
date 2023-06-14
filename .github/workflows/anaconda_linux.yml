@@ -1,5 +1,4 @@
 name: Anaconda-Linux
-run-name: anaconda_linux
 
 on:
   workflow_dispatch:
@@ -43,6 +42,8 @@ jobs:
         uses: ./.github/actions/conda_installation
         with:
           mpi_type: openmpi
+      - name: Coverage install
+        uses: ./.github/actions/coverage_install
       - name: Fortran/C tests with pytest
         id: f_c_pytest
         timeout-minutes: 60
@@ -61,6 +62,15 @@ jobs:
         uses: ./.github/actions/pytest_parallel
         with:
           shell_cmd: "bash -l {0}"
+      - name: Collect coverage information
+        continue-on-error: True
+        uses: ./.github/actions/coverage_collection
+      - name: Save code coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-artifact
+          path: .coverage
+          retention-days: 1
       - name: "Post completed"
         if: always()
         run:
@@ -68,4 +78,3 @@ jobs:
         env:
           installation_token: ${{ steps.token.outputs.installation_token }}
           installation_token_exp: ${{ steps.token.outputs.installation_token_exp }}
-          check_run_id: ${{ inputs.check_run_id }}
