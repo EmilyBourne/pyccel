@@ -156,6 +156,7 @@ class Bot:
         """
         inputs = {
                 "status":"in_progress",
+                "conclusion":"",
                 "details_url": f"https://github.com/{self._repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
                 }
         return self._GAI.update_run(self._check_run_id, inputs).json()
@@ -247,8 +248,10 @@ class Bot:
         if any(t not in default_python_versions for t in tests):
             self._GAI.create_comment(self._pr_id, "There are unrecognised tests.\n"+message_from_file('show_tests.txt'))
         else:
-            already_triggered = [c["name"] for c in self._GAI.get_check_runs(self._ref)['check_runs']]
+            check_runs = self._GAI.get_check_runs(self._ref)['check_runs']
+            already_triggered = [c["name"] for c in check_runs if c['status'] == 'completed']
             already_triggered_names = [self.get_name_key(t) for t in already_triggered]
+            already_programmed = {c["name"]:c for c in check_runs if c['status'] == 'queued'}
             print(already_triggered)
             for t in tests:
                 pv = python_version or default_python_versions[t]
@@ -256,10 +259,19 @@ class Bot:
                 if any(key in a for a in already_triggered):
                     continue
                 name = f"{test_names[t]} {key}"
-                posted = self._GAI.prepare_run(self._ref, name)
+                if key not in already_programmed:
+                    posted = self._GAI.prepare_run(self._ref, name)
+                else:
+                    posted = already_programmed[key]
+
                 deps = test_dependencies.get(t, ())
+                print(already_triggered_names, deps)
                 if all(d in already_triggered_names for d in deps):
-                    self.run_test(t, pv, posted["id"])
+                    workflow_ids = None
+                    if t == 'coverage':
+                        print([r['details_url'] for r in check_runs if r['conclusion'] == "success"])
+                        workflow_ids = [int(r['details_url'].split('/')[-1]) for r in check_runs if r['conclusion'] == "success" and '(' in r['name']]
+                    self.run_test(t, pv, posted["id"], workflow_ids)
 
     def run_test(self, test, python_version, check_run_id, workflow_ids = None):
         """
