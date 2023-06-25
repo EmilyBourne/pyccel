@@ -11,3 +11,4 @@ runs:
         pyccel_loc = pyccel.__path__[0]
         print(pyccel_loc)
         assert(exists(join(pyccel_loc,'stdlib','internal','openmp.pyccel')))
+        assert(1==2)
