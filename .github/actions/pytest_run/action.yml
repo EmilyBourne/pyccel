@@ -3,35 +3,82 @@ inputs:
   shell_cmd:
     description: 'Specifies the shell command (different for anaconda)'
     required: false
-    default: "bash"
+    default: 'bash'
+  pytest_mark:
+    description: 'Mark expression to exclude additional tests'
+    required: false
+    default: ''
 
 
 runs:
   using: "composite"
   steps:
-    - name: Test with pytest
+    - name: Python Path
       run: |
-        if [ -z ${{ runner.debug }} ]
-        then
-          export DEBUG=1
-          FLAGS="-s --log-cli-level DEBUG"
-        else
-          FLAGS=""
-        fi
         which python
-        python -m pytest -n auto -rXx -v -m "not (parallel or xdist_incompatible) and c" --ignore=symbolic --ignore=ndarrays ${FLAGS}
-        if [ -n "${SITE_DIR}" ]; then
+        echo ${{ runner.debug }}
+        #if [ -z ${{ runner.debug }} ]
+        #then
+        #  echo "DEBUG=1" >> $GITHUB_ENV
+        #  FLAGS="-s --log-cli-level DEBUG"
+        #else
+          FLAGS=""
+        #fi
+        echo "FLAGS=${FLAGS}" >> $GITHUB_ENV
+      shell: ${{ inputs.shell_cmd }}
+      working-directory: ./tests
+    - name: Pytest with options (1)
+      run: python -m pytest -n auto -rXx -v -m "not (parallel or xdist_incompatible) and c ${{ inputs.pytest_mark }}" --ignore=symbolic --ignore=ndarrays ${FLAGS} 2>&1 | tee s1_outfile.out
+      shell: ${{ inputs.shell_cmd }}
+      working-directory: ./tests
+      id: pytest_1
+    - name: if SITE_DIR is set (2)
+      run: |
+         if [ -n "${SITE_DIR}" ]; then
             echo "Touching"
             # Test ndarray folder update (requires parallel tests to avoid clean)
             touch ${SITE_DIR}/pyccel/stdlib/cwrapper/cwrapper.h
-            python -m pytest -n auto -rXx -v -m c -k test_array_int32_1d_scalar epyccel/test_arrays.py ${FLAGS}
-        fi
-        python -m pytest -rXx -v -m "xdist_incompatible and not parallel and c" --ignore=symbolic --ignore=ndarrays ${FLAGS}
-        pyccel-clean
-        python -m pytest -n auto -rXx -v -m "not (parallel or xdist_incompatible) and not (c or python)" --ignore=symbolic --ignore=ndarrays ${FLAGS}
-        python -m pytest -rXx -v -m "xdist_incompatible and not parallel and not (c or python)" --ignore=symbolic --ignore=ndarrays ${FLAGS}
-        pyccel-clean
-        python -m pytest ndarrays/ -rXx -v ${FLAGS}
+            python -m pytest -n auto -rXx -v -m c -k test_array_int32_1d_scalar epyccel/test_arrays.py ${FLAGS} 2>&1 | tee s2_outfile.out
+         fi
+      shell: ${{ inputs.shell_cmd }}
+      working-directory: ./tests
+      id: pytest_2
+    - name: pytest with options (3)
+      run: |
+         python -m pytest -rXx -m "xdist_incompatible and not parallel and c ${{ inputs.pytest_mark }}" --ignore=symbolic --ignore=ndarrays ${FLAGS} 2>&1 | tee s3_outfile.out
+         pyccel-clean
+      shell: ${{ inputs.shell_cmd }}
+      working-directory: ./tests
+      id: pytest_3
+    - name: pytest with options (4)
+      run: python -m pytest -n auto -rXx -m "not (parallel or xdist_incompatible) and not (c or python) ${{ inputs.pytest_mark }}" --ignore=symbolic --ignore=ndarrays ${FLAGS} 2>&1 | tee s4_outfile.out
+      shell: ${{ inputs.shell_cmd }}
+      working-directory: ./tests
+      id: pytest_4
+    - name: pytest with options (5)
+      run: |
+        python -m pytest -rXx -m "xdist_incompatible and not parallel and not (c or python) ${{ inputs.pytest_mark }}" --ignore=symbolic --ignore=ndarrays ${FLAGS} 2>&1 | tee s5_outfile.out
         pyccel-clean
       shell: ${{ inputs.shell_cmd }}
       working-directory: ./tests
+      id: pytest_5
+    - name: pytest ndarrays (6)
+      run: |
+        python -m pytest ndarrays/ -rXx -v ${FLAGS} 2>&1 | tee s6_outfile.out
+        pyccel-clean
+      shell: ${{ inputs.shell_cmd }}
+      working-directory: ./tests
+      id: pytest_6
+    - name: Final step
+      if: always()
+      id: status
+      run:
+        python ci_tools/json_pytest_output.py -t "Linux Test Summary" --tests "C tests:${{ steps.pytest_1.outcome }}:tests/s1_outfile.out" \
+                       "Verification of stdlib update:${{ steps.pytest_2.outcome }}:tests/s2_outfile.out" \
+                       "Non-parallelisable C tests:${{ steps.pytest_3.outcome }}:tests/s3_outfile.out" \
+                       "Fortran tests:${{ steps.pytest_4.outcome }}:tests/s4_outfile.out" \
+                       "Non-parallelisable Fortran tests:${{ steps.pytest_5.outcome }}:tests/s5_outfile.out" \
+                       "Ndarray tests for C stdlib:${{ steps.pytest_6.outcome }}:tests/s6_outfile.out" 
+                      
+      shell: ${{ inputs.shell_cmd }}
+
