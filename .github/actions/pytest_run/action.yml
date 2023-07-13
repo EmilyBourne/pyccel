@@ -17,7 +17,7 @@ runs:
       run: |
         which python
         echo ${{ runner.debug }}
-        if [ -n ${{ runner.debug }} ]
+        if [ -n "${{ runner.debug }}" ]
         then
           # If running in debug mode
           echo "DEBUG=1" >> $GITHUB_ENV
