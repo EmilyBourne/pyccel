@@ -89,6 +89,8 @@ class CompileObj:
         self._lock_target  = FileLock(self.module_target+'.lock')
         self._lock_source  = FileLock(self.source+'.lock')
 
+        print(self.module_target+'.lock', self.source+'.lock')
+
         self._flags        = list(flags)
         if has_target_file:
             self._includes     = set([folder, *includes])
@@ -97,7 +99,7 @@ class CompileObj:
         self._libs         = list(libs)
         self._libdirs      = set(libdirs)
         self._accelerators = set(accelerators)
-        self._dependencies = {a.module_target:a for a in dependencies}
+        self._dependencies = dict(sorted({a.module_target:a for a in dependencies}.items()))
         self._has_target_file = has_target_file
 
     def reset_folder(self, folder):
@@ -222,6 +224,7 @@ class CompileObj:
         if not all(isinstance(d, CompileObj) for d in args):
             raise TypeError("Dependencies require necessary compile information")
         self._dependencies.update({a.module_target:a for a in args})
+        self._dependencies = dict(sorted(self._dependencies.items()))
 
     def __enter__(self):
         self.acquire_lock()
@@ -230,8 +233,8 @@ class CompileObj:
         """
         Lock the file and its dependencies to prevent race conditions
         """
-        self.acquire_simple_lock()
         self._lock_source.acquire()
+        self.acquire_simple_lock()
         for d in self.dependencies:
             d.acquire_simple_lock()
 
@@ -249,10 +252,10 @@ class CompileObj:
         """
         Unlock the file and its dependencies
         """
-        self._lock_source.release()
-        self.release_simple_lock()
         for d in self.dependencies:
             d.release_simple_lock()
+        self._lock_source.release()
+        self.release_simple_lock()
 
     def release_simple_lock(self):
         """
