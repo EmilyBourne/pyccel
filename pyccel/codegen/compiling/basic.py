@@ -54,6 +54,7 @@ class CompileObj:
         program. If no name is provided then the module name deduced from the file
         name is used.
     """
+    compilation_in_progress = FileLock('.lock_acquisition.lock')
     __slots__ = ('_file','_folder','_module_name','_module_target','_prog_target',
                  '_lock_target','_lock_source','_flags','_includes','_libs',
                  '_libdirs','_accelerators','_dependencies','_has_target_file')
@@ -99,7 +100,7 @@ class CompileObj:
         self._libs         = list(libs)
         self._libdirs      = set(libdirs)
         self._accelerators = set(accelerators)
-        self._dependencies = dict(sorted({a.module_target:a for a in dependencies}.items()))
+        self._dependencies = {a.module_target:a for a in dependencies}
         self._has_target_file = has_target_file
 
     def reset_folder(self, folder):
@@ -224,9 +225,9 @@ class CompileObj:
         if not all(isinstance(d, CompileObj) for d in args):
             raise TypeError("Dependencies require necessary compile information")
         self._dependencies.update({a.module_target:a for a in args})
-        self._dependencies = dict(sorted(self._dependencies.items()))
 
     def __enter__(self):
+        compilation_in_progress.acquire()
         self.acquire_lock()
 
     def acquire_lock(self):
@@ -247,6 +248,7 @@ class CompileObj:
 
     def __exit__(self, exc_type, value, traceback):
         self.release_lock()
+        compilation_in_progress.release()
 
     def release_lock(self):
         """
