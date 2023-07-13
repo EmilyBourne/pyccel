@@ -90,6 +90,7 @@ def copy_internal_library(lib_folder, pyccel_dirpath, extra_files = None):
     # remove library folder to avoid missing files and copy
     # new one from pyccel stdlib
     lib_dest_path = os.path.join(pyccel_dirpath, lib_folder)
+    print("Checking for update lock : ", lib_dest_path + '.lock'
     with FileLock(lib_dest_path + '.lock'):
         # Check if folder exists
         if not os.path.exists(lib_dest_path):
