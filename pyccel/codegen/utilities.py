@@ -54,6 +54,8 @@ def not_a_copy(src_folder, dst_folder, filename):
     abs_dst_file = os.path.join(dst_folder, filename)
     src_mod_time = os.path.getatime(abs_src_file)
     dst_mod_time = os.path.getatime(abs_dst_file)
+    print(abs_src_file, abs_dst_file)
+    print(src_mod_time, dst_mod_time, src_mod_time > dst_mod_time)
     return src_mod_time > dst_mod_time
 
 #==============================================================================
@@ -114,6 +116,9 @@ def copy_internal_library(lib_folder, pyccel_dirpath, extra_files = None):
                     with open(os.path.join(lib_dest_path, filename), 'w') as f:
                         f.writelines(contents)
         elif to_update:
+            print(src_files)
+            print(dst_files)
+            assert False
             locks = []
             for s in src_files:
                 base, ext = os.path.splitext(s)
@@ -125,7 +130,11 @@ def copy_internal_library(lib_folder, pyccel_dirpath, extra_files = None):
             # Remove all files in destination directory
             for d in dst_files:
                 d_file = os.path.join(lib_dest_path, d)
-                os.remove(d_file)
+                try:
+                    os.remove(d_file)
+                except FileNotFoundError:
+                    # Allow FileNotFoundError in case of temporary files generated during compilation
+                    pass
             # Copy all files from the source to the destination
             for s in src_files:
                 shutil.copyfile(os.path.join(lib_path, s),
