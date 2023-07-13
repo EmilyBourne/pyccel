@@ -227,7 +227,7 @@ class CompileObj:
         self._dependencies.update({a.module_target:a for a in args})
 
     def __enter__(self):
-        compilation_in_progress.acquire()
+        self.compilation_in_progress.acquire()
         self.acquire_lock()
 
     def acquire_lock(self):
@@ -248,7 +248,7 @@ class CompileObj:
 
     def __exit__(self, exc_type, value, traceback):
         self.release_lock()
-        compilation_in_progress.release()
+        self.compilation_in_progress.release()
 
     def release_lock(self):
         """
