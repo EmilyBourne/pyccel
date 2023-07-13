@@ -56,6 +56,9 @@ def not_a_copy(src_folder, dst_folder, filename):
     dst_mod_time = os.path.getmtime(abs_dst_file)
     print(abs_src_file, abs_dst_file)
     print(src_mod_time, dst_mod_time, src_mod_time > dst_mod_time)
+    print(os.path.getatime(abs_src_file), os.path.getatime(abs_dst_file), src_mod_time > dst_mod_time)
+    assert os.path.getatime(abs_src_file) >= src_mod_time
+    assert os.path.getatime(abs_dst_file) >= dst_mod_time
     return src_mod_time > dst_mod_time
 
 #==============================================================================
