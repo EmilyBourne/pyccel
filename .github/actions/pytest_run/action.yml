@@ -21,9 +21,9 @@ runs:
         then
           # If running in debug mode
           echo "DEBUG=1" >> $GITHUB_ENV
-          FLAGS="-s --log-cli-level DEBUG"
+          FLAGS="-xs --log-cli-level DEBUG"
         else
-          FLAGS=""
+          FLAGS="-x"
         fi
         echo "FLAGS=${FLAGS}" >> $GITHUB_ENV
       shell: ${{ inputs.shell_cmd }}
