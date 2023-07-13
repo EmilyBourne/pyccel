@@ -346,11 +346,13 @@ class Compiler:
                 *j_code]
 
         with FileLock('.lock_acquisition.lock'):
+            compile_obj.acquire_include_locks()
             compile_obj.acquire_lock()
         try:
             self.run_command(cmd, verbose)
         finally:
             compile_obj.release_lock()
+            compile_obj.release_include_locks()
 
     def compile_program(self, compile_obj, output_folder, verbose = False):
         """
@@ -386,11 +388,13 @@ class Compiler:
                 *libs_flags, *j_code]
 
         with FileLock('.lock_acquisition.lock'):
+            compile_obj.acquire_include_locks()
             compile_obj.acquire_lock()
         try:
             self.run_command(cmd, verbose)
         finally:
             compile_obj.release_lock()
+            compile_obj.release_include_locks()
 
         return compile_obj.program_target
 
@@ -439,11 +443,13 @@ class Compiler:
                 '-o', file_out, *libs_flags]
 
         with FileLock('.lock_acquisition.lock'):
+            compile_obj.acquire_include_locks()
             compile_obj.acquire_lock()
         try:
             self.run_command(cmd, verbose)
         finally:
             compile_obj.release_lock()
+            compile_obj.release_include_locks()
 
         return file_out
 

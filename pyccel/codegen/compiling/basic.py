@@ -9,6 +9,7 @@ Module handling classes for compiler information relevant to a given object
 """
 import os
 import sys
+
 from filelock import FileLock
 
 class CompileObj:
@@ -90,9 +91,10 @@ class CompileObj:
 
         self._flags        = list(flags)
         if has_target_file:
-            self._includes     = set([folder, *includes])
+            include_set = set([folder, *includes])
         else:
-            self._includes = set(includes)
+            include_set = set(includes)
+        self._includes = {i : FileLock(i+'.lock') for i in include_set}
         self._libs         = list(libs)
         self._libdirs      = set(libdirs)
         self._accelerators = set(accelerators)
@@ -104,11 +106,11 @@ class CompileObj:
         Change the folder in which the source file is saved (useful for stdlib)
         """
         if self.has_target_file:
-            self._includes.remove(self._folder)
+            self._includes.pop(self._folder)
 
         self._file = os.path.join(folder, os.path.basename(self._file))
         self._folder = folder
-        self._includes.add(self._folder)
+        self._includes[self._folder] = FileLock(self._folder+'.lock')
 
         rel_mod_name = os.path.join(folder, self._module_name)
         self._module_target = rel_mod_name+'.o'
@@ -163,7 +165,19 @@ class CompileObj:
         Return a set containing all the directories which must be passed to the
         compiler via the include flag `-I`.
         """
-        return self._includes.union([di for d in self._dependencies.values() for di in d.includes])
+        return set(self._includes.keys()).union([di for d in self._dependencies.values() for di in d.includes])
+
+    @property
+    def include_locks(self):
+        """
+        Get the additional include directories required to compile the file.
+
+        Return a set containing all the directories which must be passed to the
+        compiler via the include flag `-I`.
+        """
+        target_includes = {i: l for d in self._dependencies.values() for i,l in d.include_locks.items()}
+        target_includes.update(self._includes)
+        return target_includes
 
     @property
     def libs(self):
@@ -228,6 +242,13 @@ class CompileObj:
         for d in self.dependencies:
             d.acquire_simple_lock()
 
+    def acquire_include_locks(self):
+        """
+        Lock the file and its dependencies to prevent race conditions
+        """
+        for l in self.include_locks.values():
+            l.acquire()
+
     def acquire_simple_lock(self):
         """
         Lock the file to prevent race conditions but not its dependencies
@@ -242,6 +263,13 @@ class CompileObj:
         self.release_simple_lock()
         for d in self.dependencies:
             d.release_simple_lock()
+
+    def release_include_locks(self):
+        """
+        Lock the file and its dependencies to prevent race conditions
+        """
+        for l in self.include_locks.values():
+            l.release()
 
     def release_simple_lock(self):
         """

@@ -10,7 +10,6 @@ This file contains some useful functions to compile the generated fortran code
 
 import os
 import shutil
-import time
 from filelock import FileLock
 import pyccel.stdlib as stdlib_folder
 
@@ -20,8 +19,6 @@ from .compiling.basic     import CompileObj
 stdlib_path = os.path.dirname(stdlib_folder.__file__)
 
 __all__ = ['copy_internal_library','recompile_object']
-
-start_time = time.time()
 
 #==============================================================================
 language_extension = {'fortran':'f90', 'c':'c', 'python':'py'}
@@ -54,11 +51,6 @@ def not_a_copy(src_folder, dst_folder, filename):
     abs_dst_file = os.path.join(dst_folder, filename)
     src_mod_time = os.path.getmtime(abs_src_file)
     dst_mod_time = os.path.getmtime(abs_dst_file)
-    print(abs_src_file, abs_dst_file)
-    print(src_mod_time, dst_mod_time, src_mod_time > dst_mod_time)
-    print(os.path.getatime(abs_src_file), os.path.getatime(abs_dst_file), src_mod_time > dst_mod_time)
-    assert os.path.getatime(abs_src_file) >= src_mod_time
-    assert os.path.getatime(abs_dst_file) >= dst_mod_time
     return src_mod_time > dst_mod_time
 
 #==============================================================================
@@ -85,15 +77,11 @@ def copy_internal_library(lib_folder, pyccel_dirpath, extra_files = None):
     lib_dest_path  : str
                      The location that the files were copied to
     """
-    print(lib_folder)
-    print(pyccel_dirpath)
-    assert time.time()-start_time < 60
     # get lib path (stdlib_path/lib_name)
     lib_path = os.path.join(stdlib_path, lib_folder)
     # remove library folder to avoid missing files and copy
     # new one from pyccel stdlib
     lib_dest_path = os.path.join(pyccel_dirpath, lib_folder)
-    print("Checking for update lock : ", lib_dest_path + '.lock')
     with FileLock(lib_dest_path + '.lock'):
         # Check if folder exists
         if not os.path.exists(lib_dest_path):
@@ -120,9 +108,6 @@ def copy_internal_library(lib_folder, pyccel_dirpath, extra_files = None):
                     with open(os.path.join(lib_dest_path, filename), 'w') as f:
                         f.writelines(contents)
         elif to_update:
-            print(src_files)
-            print(dst_files)
-            assert False
             locks = []
             for s in src_files:
                 base, ext = os.path.splitext(s)
@@ -174,6 +159,7 @@ def recompile_object(compile_obj,
     """
 
     # compile library source files
+    compile_obj.acquire_include_locks()
     compile_obj.acquire_simple_lock()
     if os.path.exists(compile_obj.module_target):
         # Check if source file has changed since last compile
@@ -183,6 +169,7 @@ def recompile_object(compile_obj,
     else:
         outdated = True
     compile_obj.release_simple_lock()
+    compile_obj.release_include_locks()
     if outdated:
         compiler.compile_module(compile_obj=compile_obj,
                 output_folder=compile_obj.source_folder,
