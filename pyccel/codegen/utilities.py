@@ -108,6 +108,7 @@ def copy_internal_library(lib_folder, pyccel_dirpath, extra_files = None):
                     with open(os.path.join(lib_dest_path, filename), 'w') as f:
                         f.writelines(contents)
         elif to_update:
+            assert False
             locks = []
             for s in src_files:
                 base, ext = os.path.splitext(s)
