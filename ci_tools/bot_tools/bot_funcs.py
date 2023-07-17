@@ -170,7 +170,7 @@ class Bot:
         AssertionError
             An assertion error is raised if the check run was not successfully updated.
         """
-        if rerequest:
+        if rerequest and self._check_run_id:
             return self._GAI.rerequest_run(self._check_run_id).json()
         inputs = {
                 "status":"in_progress",
@@ -383,6 +383,7 @@ class Bot:
         """
         pr_id = self._pr_id
         current_labels = self._GAI.get_current_labels(pr_id)
+        print(current_labels)
         stage_labels = [l["name"] for l in current_labels if l["name"] in review_stage_labels]
         assert len(stage_labels) <= 1
         if stage_labels:
