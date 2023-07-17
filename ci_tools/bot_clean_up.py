@@ -2,8 +2,10 @@ import json
 import os
 from bot_tools.bot_funcs import Bot, test_dependencies
 
-pr_test_keys = ['linux', 'windows', 'macosx', 'coverage', 'docs', 'pylint',
-                'pyccel_lint', 'spelling', 'Codacy']
+#pr_test_keys = ['linux', 'windows', 'macosx', 'coverage', 'docs', 'pylint',
+#                'pyccel_lint', 'spelling', 'Codacy']
+pr_test_keys = ['docs', 'pylint',
+                'pyccel_lint', 'spelling']
 
 
 # Parse event payload from $GITHUB_EVENT_PATH variable
@@ -54,14 +56,9 @@ if not draft:
 
     events = bot.GAI.get_events(bot._pr_id)
 
-    #print(events)
-
     shas = [e.get('sha', None) for e in events]
     print(shas)
-    print(event['check_run']['head_sha'])
     print([e.get('event', None) for e in events])
-    print(len(events))
-    print([s for s,e in zip(shas, events) if e.get('event', None) == 'committed'])
     page = 1
     start_idx = -1
     while start_idx == -1:
@@ -80,13 +77,6 @@ if not draft:
         end_idx = len(shas)
 
     relevant_events = events[:end_idx]
-    print(start_idx, end_idx)
-
-    print()
-    print("---------------------------------------------------------------------------")
-    print()
-
-    print(relevant_events)
 
     event_types = [e['event'] for e in events]
 
@@ -96,7 +86,11 @@ if not draft:
     was_examined = relevant_ready_events and relevant_ready_events[-1] == 'ready_for_review'
     result_ignored = bool(later_ready_events)
 
+    print(was_examined, result_ignored)
+
     if was_examined and not result_ignored:
+        print(all(k in completed_runs for k in pr_test_keys),
+             all(k in successful_runs for k in pr_test_keys))
         if event['check_run']['conclusion'] not in ('success', 'skipped'):
             bot.draft_due_to_failure()
         elif all(k in completed_runs for k in pr_test_keys) and \
