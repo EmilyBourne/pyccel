@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+-   Allow interfaces in classes.
+
 ### Fixed
+
+-   \[INTERNALS\] Fix string base class selection.
 
 ### Changed
 

@@ -526,7 +526,7 @@ class SemanticParser(BasicParser):
             d_var['memory_handling'] = expr.memory_handling
             d_var['shape'          ] = expr.shape
             d_var['rank'           ] = expr.rank
-            d_var['cls_base'       ] = expr.cls_base
+            d_var['cls_base'       ] = expr.cls_base or self.scope.find(expr.dtype, 'classes')
             d_var['is_target'      ] = expr.is_target
             d_var['order'          ] = expr.order
             d_var['precision'      ] = expr.precision
@@ -881,7 +881,7 @@ class SemanticParser(BasicParser):
                         symbol = expr,
                         severity='error')
 
-    def _handle_function(self, expr, func, args):
+    def _handle_function(self, expr, func, args, is_method = False):
         """
         Create the node representing the function call.
 
@@ -898,6 +898,9 @@ class SemanticParser(BasicParser):
 
         args : tuple
                The arguments passed to the function.
+
+        is_method : bool
+                Indicates if the function is a method (and should return a DottedFunctionCall).
 
         Returns
         -------
@@ -952,7 +955,11 @@ class SemanticParser(BasicParser):
 
             args = input_args
 
-            new_expr = FunctionCall(func, args, self._current_function)
+            if is_method:
+                new_expr = DottedFunctionCall(func, args, current_function = self._current_function, prefix = args[0].value)
+            else:
+                new_expr = FunctionCall(func, args, self._current_function)
+
             if None in new_expr.args:
                 errors.report("Too few arguments passed in function call",
                         symbol = expr,
@@ -1259,7 +1266,7 @@ class SemanticParser(BasicParser):
                 # update the attributes of the class and push it to the scope
                 attributes += [member]
                 new_cls = ClassDef(cls_name, attributes, [], superclass=parent)
-                self.scope.parent_scope.insert_class(new_cls)
+                self.scope.parent_scope.update_class(new_cls)
             else:
                 lhs = self._visit(lhs)
         else:
@@ -1954,9 +1961,7 @@ class SemanticParser(BasicParser):
         var = self.check_for_variable(name)
 
         if var is None:
-            var = self.scope.find(name, 'functions')
-        if var is None:
-            var = self.scope.find(name, 'symbolic_functions')
+            var = self.scope.find(name)
         if var is None:
             var = python_builtin_datatype(name)
 
@@ -2038,6 +2043,9 @@ class SemanticParser(BasicParser):
                         symbol=expr,
                         bounding_box=(self._current_fst_node.lineno, self._current_fst_node.col_offset),
                         severity='fatal')
+        if isinstance(first, ClassDef):
+            errors.report("Static class methods are not yet supported", symbol=expr,
+                    severity='fatal')
 
         d_var = self._infer_type(first)
         if d_var.get('cls_base', None) is None:
@@ -2052,14 +2060,6 @@ class SemanticParser(BasicParser):
 
         # look for a class method
         if isinstance(rhs, FunctionCall):
-            methods = list(cls_base.methods) + list(cls_base.interfaces)
-            for method in methods:
-                if isinstance(method, Interface):
-                    errors.report('Generic methods are not supported yet',
-                        symbol=method.name,
-                        bounding_box=(self._current_fst_node.lineno,
-                            self._current_fst_node.col_offset),
-                        severity='fatal')
             macro = self.scope.find(rhs_name, 'macros')
             if macro is not None:
                 master = macro.master
@@ -2069,28 +2069,15 @@ class SemanticParser(BasicParser):
                 args = macro.apply(args)
                 return FunctionCall(master, args, self._current_function)
 
-            args = [self._visit(arg) for arg in
-                    rhs.args]
-            for i in methods:
-                if str(i.name) == rhs_name:
-                    if 'numpy_wrapper' in i.decorators.keys():
-                        func = i.decorators['numpy_wrapper']
-                        self.insert_import('numpy', AsName(func, rhs_name))
-                        return func(visited_lhs, *args)
-                    else:
-                        return DottedFunctionCall(i, args, prefix = visited_lhs,
-                                    current_function = self._current_function)
+            args = [FunctionCallArgument(visited_lhs), *self._handle_function_args(rhs.args)]
+            method = cls_base.get_method(rhs_name)
+            if cls_base.name == 'numpy.ndarray':
+                numpy_class = method.cls_name
+                self.insert_import('numpy', AsName(numpy_class, numpy_class.name))
+            return self._handle_function(expr, method, args, is_method = True)
 
         # look for a class attribute / property
         elif isinstance(rhs, PyccelSymbol) and cls_base:
-            methods = list(cls_base.methods) + list(cls_base.interfaces)
-            for method in methods:
-                if isinstance(method, Interface):
-                    errors.report('Generic methods are not supported yet',
-                        symbol=method.name,
-                        bounding_box=(self._current_fst_node.lineno,
-                            self._current_fst_node.col_offset),
-                        severity='fatal')
             # standard class attribute
             if rhs in attr_name:
                 self._current_class = cls_base
@@ -2100,16 +2087,12 @@ class SemanticParser(BasicParser):
 
             # class property?
             else:
-                for i in methods:
-                    if i.name == rhs and \
-                            'property' in i.decorators.keys():
-                        if 'numpy_wrapper' in i.decorators.keys():
-                            func = i.decorators['numpy_wrapper']
-                            self.insert_import('numpy', AsName(func, rhs))
-                            return func(visited_lhs)
-                        else:
-                            return DottedFunctionCall(i, [], prefix = visited_lhs,
-                                    current_function = self._current_function)
+                method = cls_base.get_method(rhs_name)
+                assert 'property' in method.decorators
+                if cls_base.name == 'numpy.ndarray':
+                    numpy_class = method.cls_name
+                    self.insert_import('numpy', AsName(numpy_class, numpy_class.name))
+                return self._handle_function(expr, method, [FunctionCallArgument(visited_lhs)], is_method = True)
 
         # look for a macro
         else:
@@ -3260,7 +3243,10 @@ class SemanticParser(BasicParser):
                         d_var['is_const'] = ahv.is_const
                         dtype = d_var.pop('datatype')
                         if not d_var['cls_base']:
-                            d_var['cls_base'] = get_cls_base( dtype, d_var['precision'], d_var['rank'] )
+                            try:
+                                d_var['cls_base'] = get_cls_base( dtype, d_var['precision'], d_var['rank'] )
+                            except KeyError:
+                                d_var['cls_base'] = self.scope.find( dtype, 'classes' )
 
                         if 'allow_negative_index' in self.scope.decorators:
                             if a.name in decorators['allow_negative_index']:
@@ -3423,8 +3409,15 @@ class SemanticParser(BasicParser):
 
                 # update the class methods
 
-                self.scope.insert_class(ClassDef(cls_name, cls.attributes,
-                        methods, superclass=cls.superclass))
+                superclass = [self.scope.find(s, 'classes') for s in cls.superclass]
+                if any(s is None for s in superclass):
+                    for s in superclass:
+                        if s is None:
+                            errors.report("Couldn't find class {s} in scope", symbol=expr,
+                                    severity='error')
+                    superclass = [s for s in superclass if s is not None]
+                self.scope.update_class(ClassDef(cls_name, cls.attributes,
+                        methods, superclass=superclass))
 
             funcs += [func]
 
@@ -3498,16 +3491,24 @@ class SemanticParser(BasicParser):
         #      - wouldn't be better if it is done inside ClassDef?
 
         name = expr.name
+        # remove quotes for str representation
         name = name.replace("'", '')
+
+        parent = [self.scope.find(s, 'classes') for s in expr.superclass]
+        if any(s is None for s in parent):
+            for s in parent:
+                if s is None:
+                    errors.report("Couldn't find class {s} in scope", symbol=expr,
+                            severity='error')
+            parent = [s for s in parent if s is not None]
+
+        cls = ClassDef(name, [], [], superclass=parent)
+        self.scope.insert_class(cls)
+
         scope = self.create_new_class_scope(name, used_symbols=expr.scope.local_used_symbols,
                     original_symbols = expr.scope.python_names.copy())
         methods = list(expr.methods)
-        parent = expr.superclass
         interfaces = []
-
-        # remove quotes for str representation
-        cls = ClassDef(name, [], [], superclass=parent)
-        self.scope.insert_class(cls)
         const = None
 
         for (i, method) in enumerate(methods):
@@ -3552,7 +3553,7 @@ class SemanticParser(BasicParser):
 
         cls = ClassDef(name, attributes, methods,
               interfaces=interfaces, superclass=parent, scope=scope)
-        self.scope.insert_class(cls)
+        self.scope.update_class(cls)
 
         return EmptyNode()
 
