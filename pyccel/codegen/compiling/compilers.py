@@ -29,6 +29,22 @@ if platform.system() == 'Darwin':
 
 
 def get_condaless_search_path(conda_warnings = 'basic'):
+    """
+    Get a list of paths excluding the conda paths.
+
+    Get the value of the PATH variable to be set when searching for the compiler
+    This is the same as the environment PATH variable but without any conda paths.
+
+    Parameters
+    ----------
+    conda_warnings : str, optional
+        Specify the level of Conda warnings to display (choices: off, basic, verbose), Default is 'basic'.
+
+    Returns
+    -------
+    str
+        A list of paths excluding the conda paths.
+    """
     path_sep = ';' if platform.system() == 'Windows' else ':'
     current_path = os.environ['PATH']
     folders = {f: f.split(os.sep) for f in current_path.split(path_sep)}
