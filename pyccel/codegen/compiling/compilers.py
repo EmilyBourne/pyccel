@@ -29,6 +29,9 @@ if platform.system() == 'Darwin':
 
 
 def get_condaless_search_path(conda_warnings = 'basic'):
+    """_summary_
+        Lorem Ipsum Dollar
+    """
     path_sep = ';' if platform.system() == 'Windows' else ':'
     current_path = os.environ['PATH']
     folders = {f: f.split(os.sep) for f in current_path.split(path_sep)}
