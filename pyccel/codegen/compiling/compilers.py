@@ -30,7 +30,7 @@ if platform.system() == 'Darwin':
 
 def get_condaless_search_path(conda_warnings = 'basic'):
     """_summary_
-        Lorem Ipsum Dollar --- test @@@@2
+        Lorem Ipsum Dollar --- test @@@@2d
     """
     path_sep = ';' if platform.system() == 'Windows' else ':'
     current_path = os.environ['PATH']
