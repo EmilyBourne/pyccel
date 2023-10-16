@@ -947,6 +947,7 @@ class Bot:
         bool
             True if fork, False otherwise.
         """
+        print(self._pr_details)
         return self._pr_details['isCrossRepository']
 
     def leave_comment(self, comment):
