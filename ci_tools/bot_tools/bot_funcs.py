@@ -829,12 +829,8 @@ class Bot:
         if self._pr_id:
             return self._pr_id
         else:
-            cmds = [github_cli, 'pr', 'list', '--json', 'headRefOid,number']
-            with subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as p:
-                out, err = p.communicate()
-                print(err)
-                assert p.returncode == 0
-            self._pr_id = next(pr['number'] for pr in json.loads(out) if pr['headRefOid'] == self._ref)
+            possible_prs = self._GAI.get_prs()
+            self._pr_id = next(pr['number'] for pr in possible_prs if pr['head']['sha'] == self._ref)
             self._pr_details = self._GAI.get_pr_details(self._pr_id)
             self._base = self._pr_details["base"]["sha"]
             self._source_repo = self._pr_details["base"]["repo"]["full_name"]
