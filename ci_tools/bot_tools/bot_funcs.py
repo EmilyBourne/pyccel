@@ -12,13 +12,13 @@ from .github_api_interactions import GitHubAPIInteractions
 default_python_versions = {
         'anaconda_linux': '3.10',
         'anaconda_windows': '3.10',
-        'coverage': '3.7',
+        'coverage': '3.8',
         'docs': '3.8',
         'intel': '3.9',
-        'linux': '3.7',
-        'macosx': '3.10',
+        'linux': '3.8',
+        'macosx': '3.11',
         'nvidia': '3.9',
-        'pickle_wheel': '3.7',
+        'pickle_wheel': '3.8',
         'pickle': '3.8',
         'editable_pickle': '3.8',
         'pyccel_lint': '3.8',
@@ -535,6 +535,7 @@ class Bot:
             welcome_comment = next(c for c in self._GAI.get_comments(self._pr_id) if c['body'].startswith('Here is your checklist.'))
         except StopIteration:
             self._GAI.create_comment(self._pr_id, message_from_file('missing_checklist.txt'))
+            self.mark_as_draft()
             return False
 
         if '- [ ]' in welcome_comment['body']:
@@ -667,8 +668,8 @@ class Bot:
         """
         print("Trusted?")
         in_team = self._GAI.check_for_user_in_team(user, 'pyccel-dev')
-        if in_team["message"] != "Not Found":
-            print("In team")
+        if "message" not in in_team:
+            print("In team: ", in_team)
             return True
         print("User not in team")
         merged_prs = self._GAI.get_prs('all')
@@ -943,7 +944,7 @@ class Bot:
         bool
             True if fork, False otherwise.
         """
-        return self._pr_details.get('isCrossRepository', False)
+        return self._pr_details['head']['repo']['full_name'] != 'pyccel/pyccel'
 
     def leave_comment(self, comment):
         """
