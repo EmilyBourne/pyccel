@@ -261,6 +261,14 @@ def get_json_summary(untested, content_lines, existing_comments, diff):
                 end_line = line_indices[j]-1
             else:
                 end_line = line_indices[j]
+            last_valid_line = start_line
+            last_valid_line_idx = next(i for i in diff[f]['addition'] if i == last_valid_line)
+            for i in diff[f]['addition'][last_valid_line_idx:]:
+                if i-last_valid_line < 6:
+                    last_valid_line = i
+                else:
+                    break
+            end_line = min(end_line, last_valid_line)
             output = {'path':f, 'line':end_line, 'body':message}
             if start_line != end_line:
                 output['start_line'] = start_line
