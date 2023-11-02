@@ -28,5 +28,5 @@ runs:
     - name: Add remote
       if: env.repo_name != 'pyccel/pyccel'
       run: |
-        git remote add -f --no-tags fork https://github.com/${env.repo_name}
+        git remote add -f --no-tags fork https://github.com/${repo_name}
       shell: bash
