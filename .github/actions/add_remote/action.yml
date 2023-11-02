@@ -9,8 +9,8 @@ runs:
   steps:
     - name: "Get repo information"
       run: |
-        REPO_ENV=$(gh pr view ${{ inputs.pr_id }} --json=headRepositoryOwner,headRepository)
-        echo "REPO_ENV=${REPO_ENV}" >> $GITHUB_ENV
+        REPO_INFO=$(gh pr view ${{ inputs.pr_id }} --json=headRepositoryOwner,headRepository)
+        echo "REPO_INFO=${REPO_INFO}" >> $GITHUB_ENV
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
