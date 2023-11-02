@@ -28,14 +28,22 @@ def get_authorization():
     payload = {'iat': int(time.time()), 'exp': int(time.time()) + 60, 'iss': 337566}
 
     jw_token=jwt.JWT().encode(payload, signing_key, alg='RS256')
+    print(jw_token)
+    print(type(jw_token))
 
     headers = {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {jw_token}", "X-GitHub-Api-Version": "2022-11-28"}
 
     # Create JWT
     reply = requests.post("https://api.github.com/app/installations/37820767/access_tokens", headers=headers)
 
-    token  = reply.json()["token"]
-    expiry = reply.json()["expires_at"]
+    print(reply.text)
+
+    json_reply = reply.json()
+
+    print(json_reply)
+
+    token  = json_reply["token"]
+    expiry = json_reply["expires_at"]
 
     with open(os.environ["GITHUB_ENV"], "r", encoding='utf-8') as f:
         output = f.read()
