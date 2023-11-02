@@ -17,6 +17,7 @@ default_python_versions = {
         'intel': '3.9',
         'linux': '3.8',
         'macosx': '3.11',
+        'nvidia': '3.9',
         'pickle_wheel': '3.8',
         'pickle': '3.8',
         'editable_pickle': '3.8',
@@ -34,6 +35,7 @@ test_names = {
         'intel': "Unit tests on Linux with Intel compiler",
         'linux': "Unit tests on Linux",
         'macosx': "Unit tests on MacOSX",
+        'nvidia': "Unit tests on Linux with Nvidia compiler",
         'pickle_wheel': "Test pickling during wheel installation",
         'pickle': "Test pickling during source installation",
         'editable_pickle': "Test pickling during editable source installation",
@@ -47,7 +49,9 @@ test_dependencies = {'coverage':['linux']}
 
 tests_with_base = ('coverage', 'docs', 'pyccel_lint')
 
-pr_test_keys = ('linux', 'windows', 'macosx', 'coverage', 'docs', 'pylint',
+#pr_test_keys = ('linux', 'windows', 'macosx', 'coverage', 'docs', 'pylint',
+#                'pyccel_lint', 'spelling')
+pr_test_keys = ('docs', 'pylint',
                 'pyccel_lint', 'spelling')
 
 review_stage_labels = ["needs_initial_review", "Ready_for_review", "Ready_to_merge"]
@@ -294,6 +298,8 @@ class Bot:
             already_programmed = {c["name"]:c for c in check_runs if c['status'] == 'queued'}
             success_names = [self.get_name_key(c["name"]) for c in check_runs if c['status'] == 'completed' and c['conclusion'] == 'success']
             print(already_triggered)
+            print(f'mkaddani Debug  check runs:{check_runs} \n already triggered {already_triggered}')    
+
             states = []
 
             if not force_run:
@@ -417,7 +423,7 @@ class Bot:
             True if the test should be run, False otherwise.
         """
         print("Checking : ", name)
-        if key in ('linux', 'windows', 'macosx', 'anaconda_linux', 'anaconda_windows', 'coverage', 'intel'):
+        if key in ('linux', 'windows', 'macosx', 'anaconda_linux', 'anaconda_windows', 'coverage', 'intel', 'nvidia'):
             has_relevant_change = lambda diff: any((f.startswith('pyccel/') or f.startswith('tests/')) \
                                                     and f.endswith('.py') and f != 'pyccel/version.py' \
                                                     for f in diff) #pylint: disable=unnecessary-lambda-assignment
@@ -728,7 +734,12 @@ class Bot:
             whose values are dictionaries describing the reviews which either
             approved or requested changes.
         """
-        all_reviews = [r for r in self._GAI.get_reviews(self._pr_id) if r['user']['type'] != 'Bot' and r['state'] in ('APPROVED', 'CHANGES_REQUESTED')]
+        print("------------------- REVIEWS ---------------------------")
+        unfiltered_revs = self._GAI.get_reviews(self._pr_id)
+        all_reviews = [r for r in unfiltered_revs if r['user']['type'] != 'Bot' and r['state'] in ('APPROVED', 'CHANGES_REQUESTED')]
+        print(len(unfiltered_revs))
+        print(len(all_reviews))
+        print("-------------------------------------------------------")
         all_reviews.sort(key=lambda r: datetime.fromisoformat(r['submitted_at'].strip('Z')))
         reviews = {r['user']['login'] : r for r in all_reviews}
         if any(reviewer in senior_reviewer and r["state"] == 'APPROVED' for reviewer, r in reviews.items()):
