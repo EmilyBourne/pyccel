@@ -11,7 +11,7 @@ runs:
       run: |
         REPO_ENV=$(gh pr view ${{ github.event.number }} --json=headRepositoryOwner,headRepository)
         echo "REPO_ENV=${REPO_ENV}" >> $GITHUB_ENV
-      shell: shell
+      shell: bash
     - name: "Get repo identifier"
       run: |
         import json
@@ -27,3 +27,4 @@ runs:
       if: env.repo_name != 'pyccel/pyccel'
       run: |
         git remote add -f --no-tags fork https://github.com/${env.repo_name}
+      shell: bash
