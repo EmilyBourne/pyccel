@@ -1,12 +1,10 @@
 name: Deploy new version to PyPi
 
 on:
-  #workflow_run:
-  #  workflows: [Wheel-pickled-installation]
-  #  types:
-  #    - completed
-  push:
-    branches: main
+  workflow_run:
+    workflows: [Wheel-pickled-installation]
+    types:
+      - completed
 
 jobs:
   waitForWorklows:
@@ -29,8 +27,7 @@ jobs:
         working-directory: ./ci_tools
         shell: bash
         env:
-          #COMMIT: ${{ github.event.workflow_run.head_sha }}
-          COMMIT: ${{ github.event.after }}
+          COMMIT: ${{ github.event.workflow_run.head_sha }}
 
   deployVersion:
     runs-on: ubuntu-latest
