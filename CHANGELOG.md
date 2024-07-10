@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## \[1.12.2\] - 2024-09-09
+
+### Fixed
+
+-   #1927 : Improve error Message for missing target language compiler in Pyccel
+
 ## \[1.12.1\] - 2024-09-08
 
 ### Added
