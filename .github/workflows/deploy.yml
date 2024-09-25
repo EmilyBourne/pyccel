@@ -64,12 +64,23 @@ jobs:
         run: |
           version=$(python -c "from pyccel import __version__; print(__version__)")
           echo "TAG_NAME=v${version}" >> $GITHUB_OUTPUT
+      - name: "Get release notes"
+        id: release_notes
+        run: |
+          START_LINE=$(grep "^## " CHANGELOG.md -n | head -1 | cut -d: -f -1)
+          END_LINE=$(grep "^## " CHANGELOG.md -n | head -2 | tail -1 | cut -d: -f -1)
+          START_LINE=$((${START_LINE}+1))
+          END_LINE=$((${END_LINE}-1))
+          release_notes=$(sed -n ${START_LINE},${END_LINE}p CHANGELOG.md)
+          echo "RELEASE_NOTES=\"${release_notes}\""
       - name: "Update repo tags"
         uses: EndBug/latest-tag@latest
         with:
           ref: ${{ steps.tag_name.outputs.TAG_NAME }}
       - name: "Update releases"
         run: |
+          echo "Release notes:"
+          echo ${release_notes}
           gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
