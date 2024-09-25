@@ -79,4 +79,5 @@ jobs:
         env:
           tag_name: ${{ steps.tag_name.outputs.TAG_NAME }}
           release_notes: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+          GH_TOKEN: ${{ github.token }}
 
