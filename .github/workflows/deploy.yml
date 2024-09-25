@@ -1,10 +1,12 @@
 name: Deploy new version to PyPi
 
 on:
-  workflow_run:
-    workflows: [Anaconda-Windows]
-    types:
-      - completed
+  push:
+    branches: [main]
+  #workflow_run:
+  #  workflows: [Anaconda-Windows]
+  #  types:
+  #    - completed
 
 jobs:
   waitForWorklows:
@@ -21,13 +23,13 @@ jobs:
       - name: Install python dependencies
         run: |
           python -m pip install requests jwt
-      - name: Wait for workflows
-        run: |
-          python3 wait_for_main_workflows.py
-        working-directory: ./ci_tools
-        shell: bash
-        env:
-          COMMIT: ${{ github.event.workflow_run.head_sha }}
+      #- name: Wait for workflows
+      #  run: |
+      #    python3 wait_for_main_workflows.py
+      #  working-directory: ./ci_tools
+      #  shell: bash
+      #  env:
+      #    COMMIT: ${{ github.event.workflow_run.head_sha }}
 
   deployVersion:
     runs-on: ubuntu-latest
