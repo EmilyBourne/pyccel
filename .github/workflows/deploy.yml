@@ -67,8 +67,13 @@ jobs:
       - name: "Get release notes"
         id: release_notes
         run: |
+          grep "^## " CHANGELOG.md -n
+          grep "^## " CHANGELOG.md -n | head -1
+          grep "^## " CHANGELOG.md -n | head -2
           START_LINE=$(grep "^## " CHANGELOG.md -n | head -1 | cut -d: -f -1)
           END_LINE=$(grep "^## " CHANGELOG.md -n | head -2 | tail -1 | cut -d: -f -1)
+          echo $START_LINE
+          echo $END_LINE
           START_LINE=$((${START_LINE}+1))
           END_LINE=$((${END_LINE}-1))
           release_notes=$(sed -n ${START_LINE},${END_LINE}p CHANGELOG.md) >> $GITHUB_OUTPUT
