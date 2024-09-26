@@ -85,11 +85,12 @@ jobs:
           CURRENT_RELEASE_COMMIT=$(git log -1 --pretty=%H)
           echo "Releases ${LAST_RELEASE_COMMIT}..${CURRENT_RELEASE_COMMIT}"
 
-          NEW_CONTRIBUTORS=$(git diff --no-indent-heuristic --unified=0 --no-color ${LAST_RELEASE_COMMIT}..${CURRENT_RELEASE_COMMIT} AUTHORS | grep "^\+[^+]" | cut -d ' ' -f 2-)
+          AUTHOR_CHANGES=$(git diff --no-indent-heuristic --unified=0 --no-color ${LAST_RELEASE_COMMIT}..${CURRENT_RELEASE_COMMIT} AUTHORS)
           echo "New contribs"
-          echo "${NEW_CONTRIBUTORS}"
-          if [ -n ${NEW_CONTRIBUTORS} ]
+          echo "${AUTHOR_CHANGES}"
+          if [ -n ${AUTHOR_CHANGES} ]
           then
+            NEW_CONTRIBUTORS=$(echo ${AUTHOR_CHANGES} | grep "^\+[^+]" | cut -d ' ' -f 2-)
             echo "## New Contributors" >> release_notes.md
             for c in ${NEW_CONTRIBUTORS}
             do
