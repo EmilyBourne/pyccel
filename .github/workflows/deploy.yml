@@ -82,8 +82,11 @@ jobs:
         run: |
           LAST_RELEASE_COMMIT=$(git log -2 --pretty=%H | tail -1)
           CURRENT_RELEASE_COMMIT=$(git log -1 --pretty=%H)
+          echo "Releases ${LAST_RELEASE_COMMIT}..${CURRENT_RELEASE_COMMIT}"
 
           NEW_CONTRIBUTORS=$(git diff --no-indent-heuristic --unified=0 --no-color ${LAST_RELEASE_COMMIT}..${CURRENT_RELEASE_COMMIT} AUTHORS | grep "^\+[^+]" | cut -d ' ' -f 2-)
+          echo "New contribs"
+          echo "${NEW_CONTRIBUTORS}"
           if [ -n ${NEW_CONTRIBUTORS} ]
           then
             echo "## New Contributors" >> release_notes.md
@@ -94,8 +97,18 @@ jobs:
             echo "" >> release_notes.md
           fi
 
+          echo "Ready"
+
+          gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /search/issues?q="${CURRENT_RELEASE_COMMIT}"
+
           PR_ID=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /search/issues?q="${CURRENT_RELEASE_COMMIT}" | jq '.["items"][0]["number"]')
+
+          echo "Found PR : ${PR_ID}"
+          gh pr view ${PR_ID} --json commits
+          jq '.["commits"][]["authors"][]["login"]'
           CONTRIBUTORS=$(gh pr view ${PR_ID} --json commits | jq '.["commits"][]["authors"][]["login"]' | tr -d '"' | sort -u)
+          echo "Contributors"
+          echo ${CONTRIBUTORS}
 
           echo "## Contributors" >> release_notes.md
           echo "${CONTRIBUTORS}" >> release_notes.md
