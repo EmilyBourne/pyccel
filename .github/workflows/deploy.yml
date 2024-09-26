@@ -88,7 +88,7 @@ jobs:
           NEW_CONTRIBUTORS=$(git diff --no-indent-heuristic --unified=0 --no-color ${LAST_RELEASE_COMMIT}..${CURRENT_RELEASE_COMMIT} AUTHORS | { grep "^\+[^+]" || true; } | cut -d ' ' -f 2-)
           echo "New contribs"
           echo "${NEW_CONTRIBUTORS}"
-          if [ -n ${NEW_CONTRIBUTORS} ]
+          if [ -n "${NEW_CONTRIBUTORS}" ]
           then
             echo "## New Contributors" >> release_notes.md
             for c in ${NEW_CONTRIBUTORS}
@@ -112,7 +112,6 @@ jobs:
           echo ${CONTRIBUTORS}
 
           echo "## Contributors" >> release_notes.md
-          echo "${CONTRIBUTORS}" >> release_notes.md
           for c in ${CONTRIBUTORS}
           do
             echo "- @$c" >> release_notes.md
