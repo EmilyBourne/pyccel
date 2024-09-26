@@ -72,19 +72,15 @@ jobs:
           START_LINE=$((${START_LINE}+1))
           END_LINE=$((${END_LINE}-1))
           release_notes=$(sed -n ${START_LINE},${END_LINE}p CHANGELOG.md) >> $GITHUB_OUTPUT
-          echo "${release_notes}"
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
           echo "${release_notes}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          cat $GITHUB_OUTPUT
       - name: "Update repo tags"
         uses: EndBug/latest-tag@latest
         with:
           ref: ${{ steps.tag_name.outputs.TAG_NAME }}
       - name: "Update releases"
         run: |
-          echo "Release notes:"
-          printf "${release_notes}"
           gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
