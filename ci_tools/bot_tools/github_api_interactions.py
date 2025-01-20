@@ -21,7 +21,7 @@ def get_authorization():
     str
         A string describing the expiration of the JWT.
     """
-    signing_key = jwt.jwk_from_pem(bytes(os.environ["PEM"], "utf-8"))
+    signing_key = jwt.jwk_from_pem(bytes(os.environ["BOT_PEM"], "utf-8"))
     # Issued at time
     # JWT expiration time (10 minutes maximum)
     # GitHub App's identifier
