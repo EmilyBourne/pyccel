@@ -32,17 +32,3 @@ jobs:
           python ci_tools/bot_comment_react.py
         env:
           GH_TOKEN: ${{ github.token }}
-
-  Say_hi:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - id: run_bot
-        run: |
-          event_data=$(cat $GITHUB_EVENT_PATH)
-          gh pr comment ${{ github.event.issue.number }} --body "${event_data}"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
