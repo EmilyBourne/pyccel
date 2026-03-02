@@ -81,9 +81,13 @@ jobs:
           git diff ${{ env.BASE }}..HEAD --no-indent-heuristic --unified=0 --output=pull_diff.txt --no-color
           python ci_tools/list_docs_tovalidate.py pull_diff.txt objects.txt
           touch report.txt
+          python -m numpydoc validate ci_tools.bot_tools.github_api_interactions.GitHubAPIInteractions._post_request 2>&1 | tee -a report.txt || true
           export PYTHONPATH=ci_tools
           while read line; do
             echo "python -m numpydoc validate $line"
+            ls
+            ls ci_tools
+            ls ci_tools/bot_tools
             python -m numpydoc validate $line 2>&1 | tee -a report.txt || true
           done < objects.txt
           cd ..
