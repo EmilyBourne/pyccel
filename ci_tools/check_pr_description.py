@@ -19,8 +19,6 @@ lines = body.splitlines()
 
 first_line = next((l for l in lines if l.strip()), '')
 
-print(first_line.strip())
-print(original_body[0].strip())
 if first_line.strip() == original_body[0].strip():
     print("ERROR: The PR description still contains the boilerplate placeholder. "
           "Please replace it with a description of your changes.")
@@ -36,7 +34,7 @@ if '- [ ]' in body:
           "Please complete the PR checklist before marking the PR as ready.")
     sys.exit(1)
 
-if body.count('- [ ]') != sum(1 if line.startswith('- [ ]') else 0 for line in original_body):
+if body.count('- [x]') != sum(1 if line.startswith('- [ ]') else 0 for line in original_body):
     print("ERROR: Missing checklist items. "
           "Please mark irrelevant items as complete instead of deleting them to help reviewers.")
     sys.exit(1)
